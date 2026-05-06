@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學生補助身分管理系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f7f8fa;
+    --border: #e2e6ea;
+    --text: #1a2332;
+    --text2: #5a6a7a;
+    --accent: #1a56db;
+    --accent2: #1e429f;
+    --green: #057a55;
+    --green-bg: #f0fdf4;
+    --red: #c81e1e;
+    --red-bg: #fef2f2;
+    --yellow: #9f580a;
+    --yellow-bg: #fffbeb;
+    --orange: #c05621;
+    --pending: #7e3af2;
+    --pending-bg: #f5f3ff;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a2332 0%, #1e429f 50%, #1a56db 100%);
+  }
+  .auth-card {
+    background: #fff; border-radius: 18px; padding: 48px 40px;
+    width: 380px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .auth-icon { font-size: 3rem; margin-bottom: 12px; }
+  .auth-card h1 { font-size: 1.4rem; color: var(--text); font-weight: 700; margin-bottom: 6px; }
+  .auth-card p { color: var(--text2); font-size: 0.88rem; margin-bottom: 32px; line-height: 1.6; }
+  .btn-google {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; padding: 13px 20px; border-radius: 8px;
+    border: 1.5px solid #dadce0; background: #fff; cursor: pointer;
+    font-size: 0.95rem; font-weight: 500; color: #3c4043;
+    transition: box-shadow 0.2s, background 0.2s;
+  }
+  .btn-google:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .btn-google svg { width: 20px; height: 20px; }
+
+  /* ── PENDING SCREEN ── */
+  #pending-screen { display:none; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+  .pending-card { background:#fff; border-radius:var(--radius); padding:40px; max-width:420px; text-align:center; box-shadow:var(--shadow); }
+  .pending-card .icon { font-size:3rem; margin-bottom:16px; }
+  .pending-card h2 { font-size:1.2rem; margin-bottom:8px; }
+  .pending-card p { color:var(--text2); font-size:0.9rem; line-height:1.6; }
+  .btn-signout { margin-top:20px; padding:9px 20px; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:pointer; font-size:0.88rem; color:var(--text2); }
+
+  /* ── MAIN APP ── */
+  #app { display:none; flex-direction:column; min-height:100vh; }
+
+  /* TOPBAR */
+  .topbar {
+    background:#fff; border-bottom:1px solid var(--border);
+    padding:0 24px; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .topbar-left { display:flex; align-items:center; gap:16px; }
+  .logo { font-size:1.05rem; font-weight:700; color:var(--accent); letter-spacing:-0.3px; }
+  .logo span { color:var(--text2); font-weight:400; font-size:0.85rem; margin-left:6px; }
+  .topbar-nav { display:flex; gap:4px; }
+  .nav-tab {
+    padding:6px 14px; border-radius:6px; border:none; background:transparent;
+    cursor:pointer; font-size:0.88rem; color:var(--text2); font-family:inherit;
+    transition:background 0.15s, color 0.15s;
+  }
+  .nav-tab:hover { background:var(--bg); color:var(--text); }
+  .nav-tab.active { background:var(--accent); color:#fff; }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .user-chip { display:flex; align-items:center; gap:8px; font-size:0.85rem; }
+  .user-avatar {
+    width:30px; height:30px; border-radius:50%; background:var(--accent);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:0.8rem; font-weight:600; overflow:hidden;
+  }
+  .user-avatar img { width:100%; height:100%; object-fit:cover; }
+  .role-badge {
+    padding:2px 8px; border-radius:20px; font-size:0.75rem; font-weight:600;
+  }
+  .role-admin { background:#dbeafe; color:var(--accent2); }
+  .role-user { background:#f0fdf4; color:var(--green); }
+  .btn-sm {
+    padding:6px 12px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:0.82rem; color:var(--text2);
+    font-family:inherit; transition:background 0.15s;
+  }
+  .btn-sm:hover { background:var(--bg); }
+
+  /* PANELS */
+  .panel { display:none; padding:24px; max-width:1400px; margin:0 auto; width:100%; }
+  .panel.active { display:block; }
+
+  /* CARDS */
+  .card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; margin-bottom:20px; }
+  .card-title { font-size:1rem; font-weight:700; margin-bottom:16px; color:var(--text); display:flex; align-items:center; gap:8px; }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border:2px dashed var(--border); border-radius:var(--radius);
+    padding:32px; text-align:center; cursor:pointer;
+    transition:border-color 0.2s, background 0.2s;
+    background:var(--surface2);
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--accent); background:#eff6ff; }
+  .upload-zone .icon { font-size:2.5rem; margin-bottom:8px; }
+  .upload-zone p { color:var(--text2); font-size:0.9rem; }
+  .upload-zone strong { color:var(--accent); }
+  #file-input { display:none; }
+
+  /* BUTTONS */
+  .btn-primary {
+    padding:9px 18px; background:var(--accent); color:#fff; border:none;
+    border-radius:7px; cursor:pointer; font-size:0.88rem; font-weight:600;
+    font-family:inherit; transition:background 0.15s; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-primary:hover { background:var(--accent2); }
+  .btn-primary:disabled { background:#9ca3af; cursor:not-allowed; }
+  .btn-danger {
+    padding:7px 14px; background:var(--red-bg); color:var(--red); border:1px solid #fca5a5;
+    border-radius:6px; cursor:pointer; font-size:0.82rem; font-family:inherit;
+  }
+  .btn-success {
+    padding:7px 14px; background:var(--green-bg); color:var(--green); border:1px solid #6ee7b7;
+    border-radius:6px; cursor:pointer; font-size:0.82rem; font-family:inherit;
+  }
+
+  /* FILTER BAR */
+  .filter-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; }
+  .filter-label { font-size:0.82rem; font-weight:600; color:var(--text2); width:64px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+  .chip {
+    padding:5px 12px; border-radius:20px; border:1.5px solid var(--border);
+    background:#fff; cursor:pointer; font-size:0.82rem; color:var(--text2);
+    transition:all 0.15s; font-family:inherit;
+  }
+  .chip:hover { border-color:#93c5fd; color:var(--accent); }
+  .chip.grade.active { background:#ecfdf5; border-color:#6ee7b7; color:var(--green); font-weight:600; }
+  .chip.cat.active { background:#eff6ff; border-color:#93c5fd; color:var(--accent); font-weight:600; }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; max-height:600px; border-radius:var(--radius); border:1px solid var(--border); }
+  table { border-collapse:collapse; width:max-content; min-width:100%; font-size:0.84rem; }
+  thead th {
+    background:#f8fafc; padding:10px 12px; text-align:left;
+    border-bottom:1.5px solid var(--border); border-right:1px solid var(--border);
+    white-space:nowrap; font-weight:600; color:var(--text2);
+    position:sticky; top:0; z-index:10;
+  }
+  tbody td {
+    padding:9px 12px; border-bottom:1px solid var(--border);
+    border-right:1px solid #f1f5f9; white-space:nowrap;
+  }
+  tbody tr:hover { background:#f8fafc; }
+  .seq-col { text-align:center; font-weight:600; color:var(--text2); font-family:'JetBrains Mono',monospace; }
+  .optimal-col { font-weight:600; color:var(--accent); }
+  .multi-row { background:#fffbeb !important; }
+  .multi-badge {
+    background:#f59e0b; color:#fff; font-size:0.72rem;
+    padding:2px 7px; border-radius:4px; font-weight:700;
+  }
+
+  /* EXPORT BAR */
+  .export-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+  .stat-chip { background:var(--bg); padding:5px 12px; border-radius:6px; font-size:0.82rem; color:var(--text2); }
+
+  /* ADMIN TABLES */
+  .user-table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+  .user-table th { padding:10px 12px; background:var(--surface2); border-bottom:1.5px solid var(--border); text-align:left; font-weight:600; color:var(--text2); }
+  .user-table td { padding:10px 12px; border-bottom:1px solid var(--border); }
+  .user-table tr:hover td { background:#f8fafc; }
+  .status-pending { color:var(--pending); font-weight:600; font-size:0.82rem; }
+  .status-active { color:var(--green); font-weight:600; font-size:0.82rem; }
+  .status-denied { color:var(--red); font-weight:600; font-size:0.82rem; }
+
+  /* IMPORT LOG */
+  .log-entry { border:1px solid var(--border); border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .log-header {
+    padding:12px 16px; background:var(--surface2);
+    display:flex; justify-content:space-between; align-items:center;
+    cursor:pointer; user-select:none;
+  }
+  .log-header:hover { background:#eef2f7; }
+  .log-meta { font-size:0.85rem; }
+  .log-meta strong { color:var(--text); }
+  .log-meta span { color:var(--text2); font-size:0.8rem; margin-left:8px; }
+  .log-body { display:none; padding:12px 16px; }
+  .log-body.open { display:block; }
+  .diff-item { display:flex; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); font-size:0.83rem; align-items:flex-start; }
+  .diff-item:last-child { border:none; }
+  .diff-tag { padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:700; flex-shrink:0; }
+  .diff-new { background:#dcfce7; color:#15803d; }
+  .diff-del { background:#fee2e2; color:#b91c1c; }
+  .diff-mod { background:#fef9c3; color:#854d0e; }
+
+  /* MODAL */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45);
+    z-index:1000; align-items:center; justify-content:center;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#fff; border-radius:12px; padding:28px; width:400px; box-shadow:var(--shadow-lg); }
+  .modal h3 { margin-bottom:16px; font-size:1rem; }
+  .modal input {
+    width:100%; padding:9px 12px; border:1.5px solid var(--border);
+    border-radius:7px; font-size:0.9rem; font-family:inherit; margin-bottom:16px;
+    outline:none; transition:border-color 0.15s;
+  }
+  .modal input:focus { border-color:var(--accent); }
+  .modal-btns { display:flex; gap:8px; justify-content:flex-end; }
+
+  /* MISC */
+  .empty-state { text-align:center; padding:40px; color:var(--text2); font-size:0.95rem; }
+  .loading-bar { text-align:center; padding:20px; color:var(--accent); font-size:0.9rem; }
+  .alert { padding:10px 16px; border-radius:7px; font-size:0.85rem; margin-bottom:12px; }
+  .alert-info { background:#eff6ff; color:var(--accent2); border:1px solid #bfdbfe; }
+  .alert-warn { background:var(--yellow-bg); color:var(--yellow); border:1px solid #fcd34d; }
+  .alert-admin-only { display:none; }
+  .section-title { font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:16px; padding-bottom:10px; border-bottom:1.5px solid var(--border); }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:768px){ .grid-2{grid-template-columns:1fr;} .panel{padding:16px;} }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-icon">🏫</div>
+    <h1>學生補助身分管理系統</h1>
+    <p>本系統受保護，需使用學校 Google 帳號登入。<br>首次登入需等待管理員審核核准。</p>
+    <button class="btn-google" id="btn-google-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- PENDING SCREEN -->
+<div id="pending-screen">
+  <div class="pending-card">
+    <div class="icon">⏳</div>
+    <h2>等待管理員審核</h2>
+    <p>您的帳號申請已送出，請等待管理員核准後才能查看資料。<br><br>
+    核准後請重新整理頁面或重新登入。</p>
+    <button class="btn-signout" id="btn-signout-pending">登出</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">補助身分管理 <span>SJPS</span></div>
+      <nav class="topbar-nav" id="main-nav">
+        <button class="nav-tab active" data-panel="panel-data">📊 資料查閱</button>
+        <button class="nav-tab" data-panel="panel-import" id="nav-import">📥 匯入資料</button>
+        <button class="nav-tab" data-panel="panel-logs">📋 匯入紀錄</button>
+        <button class="nav-tab admin-only" data-panel="panel-admin" style="display:none">⚙️ 管理員</button>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div>
+          <div style="font-size:0.82rem;font-weight:600" id="user-display-name">載入中...</div>
+          <div class="role-badge role-user" id="user-role-badge">一般使用者</div>
+        </div>
+      </div>
+      <button class="btn-sm" id="btn-signout-main">登出</button>
+    </div>
+  </div>
+
+  <!-- DATA PANEL -->
+  <div class="panel active" id="panel-data">
+    <div id="data-loading" class="loading-bar">🔄 載入資料中...</div>
+    <div id="data-content" style="display:none">
+      <div class="card">
+        <div class="card-title">🔍 篩選條件</div>
+        <div class="filter-bar">
+          <span class="filter-label">📚 年級</span>
+          <div class="chips" id="grade-chips"></div>
+        </div>
+        <div class="filter-bar">
+          <span class="filter-label">🏷️ 類別</span>
+          <div class="chips" id="cat-chips"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="export-bar">
+          <span class="stat-chip" id="result-count">共 0 人</span>
+          <button class="btn-primary" id="btn-export-all">⬇️ 匯出全部 Excel</button>
+          <button class="btn-primary" id="btn-export-filtered">⬇️ 匯出篩選結果</button>
+        </div>
+        <div class="table-wrap">
+          <table id="data-table">
+            <thead id="data-thead"></thead>
+            <tbody id="data-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="data-empty" style="display:none">🔍 該篩選條件下沒有符合的學生名單</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT PANEL -->
+  <div class="panel" id="panel-import">
+    <div class="alert alert-warn" id="import-admin-warn" style="display:none">⚠️ 僅管理員可匯入資料</div>
+    <div id="import-content">
+      <div class="card">
+        <div class="card-title">📥 匯入 Excel 資料</div>
+        <div class="alert alert-info" style="margin-bottom:16px">
+          每次匯入將與現有資料比對，自動記錄新增、刪除、修改的項目。紀錄永久保存，除非管理員手動刪除。
+        </div>
+        <div class="upload-zone" id="upload-zone">
+          <div class="icon">📂</div>
+          <p><strong>點擊選擇</strong>或拖曳 Excel 檔案至此</p>
+          <p style="margin-top:6px;font-size:0.8rem">支援 .xlsx / .xls</p>
+        </div>
+        <input type="file" id="file-input" accept=".xlsx,.xls">
+        <div id="import-preview" style="display:none;margin-top:16px">
+          <div class="card-title" style="margin-bottom:8px">📊 預覽變更 <span id="preview-counts" style="font-weight:400;font-size:0.85rem;color:var(--text2)"></span></div>
+          <div id="diff-preview" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:12px;"></div>
+          <div style="margin-top:16px;display:flex;gap:8px;">
+            <button class="btn-primary" id="btn-confirm-import">✅ 確認匯入</button>
+            <button class="btn-sm" id="btn-cancel-import">取消</button>
+          </div>
+        </div>
+        <div id="import-loading" style="display:none" class="loading-bar">🔄 處理中，請稍候...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGS PANEL -->
+  <div class="panel" id="panel-logs">
+    <div class="card">
+      <div class="card-title">📋 匯入歷史紀錄</div>
+      <div id="logs-loading" class="loading-bar">🔄 載入中...</div>
+      <div id="logs-list"></div>
+      <div class="empty-state" id="logs-empty" style="display:none">尚無匯入紀錄</div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="panel" id="panel-admin">
+    <div class="grid-2">
+      <!-- Pending Users -->
+      <div class="card">
+        <div class="card-title">⏳ 待審核使用者</div>
+        <div id="pending-list"><div class="loading-bar">載入中...</div></div>
+      </div>
+      <!-- All Users -->
+      <div class="card">
+        <div class="card-title">👥 所有使用者</div>
+        <div id="all-users-list"><div class="loading-bar">載入中...</div></div>
+      </div>
+    </div>
+    <!-- Import Logs Management -->
+    <div class="card">
+      <div class="card-title">🗂️ 匯入紀錄管理（可刪除）</div>
+      <div id="admin-logs-list"><div class="loading-bar">載入中...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: rename user -->
+<div class="modal-overlay" id="rename-modal">
+  <div class="modal">
+    <h3>✏️ 設定使用者顯示名稱</h3>
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:12px">設定名稱方便管理員辨識（如：王老師）</p>
+    <input type="text" id="rename-input" placeholder="輸入顯示名稱">
+    <div class="modal-btns">
+      <button class="btn-sm" onclick="closeModal()">取消</button>
+      <button class="btn-primary" id="rename-confirm">確認儲存</button>
+    </div>
+  </div>
+</div>
+
+<!--
+=== FIRESTORE SECURITY RULES (貼到 Firebase Console → Firestore → Rules) ===
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 輔助函數：檢查登入者是否為管理員
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // 輔助函數：檢查登入者是否已核准
+    function isApproved() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
+    // users: 已核准者可讀自己的資料；只有管理員能讀所有人；新用戶可以創建自己的文件
+    match /users/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if isAdmin() || request.auth.uid == uid;
+      allow delete: if isAdmin();
+    }
+
+    // students: 已核准者可讀；只有管理員可寫
+    match /students/{doc} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+
+    // importLogs: 已核准者可讀；只有管理員可寫/刪
+    match /importLogs/{doc} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+  }
+}
+
+=== END RULES ===
+-->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, getDocs, addDoc, serverTimestamp, query, orderBy, onSnapshot, writeBatch }
+  from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDEDZVF5IDPEKsCWJxO-PMH873TbIHoE-A",
+  authDomain: "sjps-subsidylist.firebaseapp.com",
+  projectId: "sjps-subsidylist",
+  storageBucket: "sjps-subsidylist.firebasestorage.app",
+  messagingSenderId: "572948992410",
+  appId: "1:572948992410:web:7810606424cbd01115ea23",
+  measurementId: "G-EK50TNNTJN"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── CONSTANTS ──
+const ADMIN_EMAIL = ""; // 系統會自動將第一個登入者設為管理員，或在Firestore手動設定
+const ALL_COLS = [
+  '班級','座號','姓名','性別','身分證號','最優補助身分',
+  '1.低收(社)','2.中低收(社)','3.單親(社)','4.身障(學)(社)',
+  '5.身障(家)(社)','6.身障(學)','7.身障(家)','8.重身障(學)',
+  '9.原民生','10.原民清寒(原)','11.功勳','12.導師認定','兄弟姊妹'
+];
+const SUBSIDY_COLS = ALL_COLS.slice(6, 18);
+
+// ── STATE ──
+let currentUser = null;
+let currentUserDoc = null;
+let allStudents = [];
+let currentGrade = 'all';
+let selectedCats = new Set();
+let pendingImportData = null;
+let renameTargetUid = null;
+
+// ── AUTH ──
+document.getElementById('btn-google-login').onclick = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e) { alert('登入失敗：' + e.message); }
+};
+document.getElementById('btn-signout-pending').onclick = () => signOut(auth);
+document.getElementById('btn-signout-main').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { showScreen('auth'); return; }
+  currentUser = user;
+  const userRef = doc(db, 'users', user.uid);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) {
+    // New user — create pending record
+    await setDoc(userRef, {
+      email: user.email,
+      displayName: user.displayName || '',
+      customName: '',
+      photoURL: user.photoURL || '',
+      role: 'pending',
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      approvedAt: null
+    });
+    // Check if this is the very first user — auto-promote to admin
+    const allUsers = await getDocs(collection(db, 'users'));
+    if (allUsers.size === 1) {
+      await updateDoc(userRef, { role: 'admin', status: 'active', approvedAt: serverTimestamp() });
+      currentUserDoc = { role: 'admin', status: 'active', customName: user.displayName };
+      initApp();
+      return;
+    }
+    showScreen('pending');
+    return;
+  }
+
+  currentUserDoc = snap.data();
+  if (currentUserDoc.status === 'pending') { showScreen('pending'); return; }
+  if (currentUserDoc.status === 'denied') { showScreen('pending'); return; }
+  initApp();
+});
+
+function showScreen(s) {
+  document.getElementById('auth-screen').style.display = s==='auth' ? 'flex' : 'none';
+  document.getElementById('pending-screen').style.display = s==='pending' ? 'flex' : 'none';
+  document.getElementById('app').style.display = s==='app' ? 'flex' : 'none';
+  if (s==='app') document.getElementById('app').style.flexDirection='column';
+}
+
+// ── INIT APP ──
+function initApp() {
+  showScreen('app');
+  const isAdmin = currentUserDoc.role === 'admin';
+  const name = currentUserDoc.customName || currentUser.displayName || currentUser.email;
+
+  document.getElementById('user-display-name').textContent = name;
+  const badge = document.getElementById('user-role-badge');
+  badge.textContent = isAdmin ? '管理員' : '一般使用者';
+  badge.className = 'role-badge ' + (isAdmin ? 'role-admin' : 'role-user');
+
+  const av = document.getElementById('user-avatar');
+  if (currentUser.photoURL) av.innerHTML = `<img src="${currentUser.photoURL}">`;
+  else av.textContent = name.charAt(0).toUpperCase();
+
+  // Show admin tabs/buttons
+  if (isAdmin) {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    document.getElementById('nav-import').style.display = '';
+  } else {
+    document.getElementById('nav-import').style.display = 'none';
+  }
+
+  // Nav
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panelId = btn.dataset.panel;
+      document.getElementById(panelId).classList.add('active');
+      if (panelId === 'panel-logs') loadLogs();
+      if (panelId === 'panel-admin') loadAdminPanel();
+    };
+  });
+
+  loadStudentData();
+  setupImport();
+}
+
+// ── LOAD STUDENTS ──
+async function loadStudentData() {
+  document.getElementById('data-loading').style.display = 'block';
+  document.getElementById('data-content').style.display = 'none';
+  try {
+    const snap = await getDocs(collection(db, 'students'));
+    allStudents = snap.docs.map(d => d.data());
+    buildFilters();
+    renderTable();
+    document.getElementById('data-loading').style.display = 'none';
+    document.getElementById('data-content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('data-loading').innerHTML = '❌ 載入失敗：' + e.message;
+  }
+}
+
+// ── FILTERS ──
+function buildFilters() {
+  const grades = [...new Set(allStudents.map(s => s.grade))].sort();
+  const cats = [...new Set(allStudents.map(s => s.optimalType))].sort();
+
+  let gHtml = `<button class="chip grade active" data-v="all">全部年級</button>`;
+  grades.forEach(g => gHtml += `<button class="chip grade" data-v="${g}">${g}</button>`);
+  document.getElementById('grade-chips').innerHTML = gHtml;
+
+  let cHtml = `<button class="chip cat active" data-v="all">全部類別</button>`;
+  cats.forEach(c => cHtml += `<button class="chip cat" data-v="${escHtml(c)}">${escHtml(c)}</button>`);
+  document.getElementById('cat-chips').innerHTML = cHtml;
+
+  document.querySelectorAll('.chip.grade').forEach(btn => {
+    btn.onclick = () => {
+      currentGrade = btn.dataset.v;
+      document.querySelectorAll('.chip.grade').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable();
+    };
+  });
+  document.querySelectorAll('.chip.cat').forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.dataset.v;
+      if (v === 'all') {
+        selectedCats.clear();
+        document.querySelectorAll('.chip.cat').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      } else {
+        document.getElementById('cat-chips').querySelector('[data-v="all"]').classList.remove('active');
+        if (selectedCats.has(v)) { selectedCats.delete(v); btn.classList.remove('active'); }
+        else { selectedCats.add(v); btn.classList.add('active'); }
+        if (selectedCats.size === 0) document.getElementById('cat-chips').querySelector('[data-v="all"]').classList.add('active');
+      }
+      renderTable();
+    };
+  });
+}
+
+// ── RENDER TABLE ──
+function renderTable() {
+  let filtered = allStudents.filter(s => {
+    const mg = currentGrade === 'all' || s.grade === currentGrade;
+    const mc = selectedCats.size === 0 || selectedCats.has(s.optimalType);
+    return mg && mc;
+  });
+  filtered.sort((a,b) => {
+    const ca = String(a.班級||''), cb = String(b.班級||'');
+    if (ca!==cb) return ca.localeCompare(cb, 'zh-TW');
+    return Number(a.座號||0) - Number(b.座號||0);
+  });
+
+  const empty = document.getElementById('data-empty');
+  const table = document.getElementById('data-table');
+  document.getElementById('result-count').textContent = `共 ${filtered.length} 人`;
+
+  if (filtered.length === 0) { empty.style.display='block'; table.style.display='none'; return; }
+  empty.style.display='none'; table.style.display='';
+
+  const thead = document.getElementById('data-thead');
+  const tbody = document.getElementById('data-tbody');
+  thead.innerHTML = `<tr><th>序號</th>${ALL_COLS.map(c=>`<th>${escHtml(c)}</th>`).join('')}<th>多重標記</th></tr>`;
+  tbody.innerHTML = filtered.map((s,i) => {
+    const multi = s.isMulti ? `<span class="multi-badge">★多重(${s.multiCount}項)</span>` : '';
+    const cells = ALL_COLS.map((c,ci) => {
+      const v = escHtml(String(s[c]??''));
+      if (ci===5) return `<td class="optimal-col">${v}</td>`;
+      return `<td>${v}</td>`;
+    }).join('');
+    return `<tr class="${s.isMulti?'multi-row':''}"><td class="seq-col">${i+1}</td>${cells}<td>${multi}</td></tr>`;
+  }).join('');
+
+  // Store filtered for export
+  window._filteredStudents = filtered;
+}
+
+// ── EXPORT ──
+document.getElementById('btn-export-all').onclick = () => exportExcel(allStudents, '全部學生補助名單');
+document.getElementById('btn-export-filtered').onclick = () => {
+  const data = window._filteredStudents || [];
+  const label = selectedCats.size > 0 ? [...selectedCats].join('、') : '全部';
+  exportExcel(data, `篩選名單_${label}`);
+};
+
+function exportExcel(data, title) {
+  if (!data.length) { alert('沒有資料可匯出'); return; }
+  const rows = data.map((s,i) => {
+    const row = { 序號: i+1 };
+    ALL_COLS.forEach(c => row[c] = s[c]??'');
+    row['多重標記'] = s.isMulti ? `多重(${s.multiCount}項)` : '';
+    return row;
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, title.substring(0,30));
+  XLSX.writeFile(wb, `${title}_${today()}.xlsx`);
+}
+
+function today() { return new Date().toISOString().slice(0,10).replace(/-/g,''); }
+
+// ── IMPORT ──
+function setupImport() {
+  const zone = document.getElementById('upload-zone');
+  const fi = document.getElementById('file-input');
+  zone.onclick = () => fi.click();
+  zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag'); };
+  zone.ondragleave = () => zone.classList.remove('drag');
+  zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); };
+  fi.onchange = e => handleFile(e.target.files[0]);
+  document.getElementById('btn-confirm-import').onclick = confirmImport;
+  document.getElementById('btn-cancel-import').onclick = () => {
+    document.getElementById('import-preview').style.display = 'none';
+    pendingImportData = null;
+    fi.value = '';
+  };
+}
+
+function handleFile(file) {
+  if (!file) return;
+  if (currentUserDoc.role !== 'admin') { alert('僅管理員可匯入資料'); return; }
+  document.getElementById('import-loading').style.display = 'block';
+  document.getElementById('import-preview').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const newStudents = [];
+      wb.SheetNames.forEach(sn => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {defval:''});
+        rows.forEach(row => {
+          const cls = String(row['班級']||'').trim();
+          if (!cls || !row['姓名']) return;
+          const gradeM = cls.match(/^\d/);
+          const grade = gradeM ? gradeM[0]+'年級' : '其他';
+          let opt = String(row['最優補助身分']||'').trim() || '未分類/未填寫最優身分';
+          const matched = SUBSIDY_COLS.filter(c => String(row[c]||'').trim()!=='');
+          const id = `${cls}_${String(row['座號']||'').trim()}_${String(row['姓名']||'').trim()}`;
+          const student = { _id: id, grade, optimalType: opt, isMulti: matched.length>1, multiCount: matched.length };
+          ALL_COLS.forEach(c => student[c] = String(row[c]??''));
+          newStudents.push(student);
+        });
+      });
+      computeDiff(newStudents);
+    } catch(err) {
+      document.getElementById('import-loading').style.display = 'none';
+      alert('讀取失敗：' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function computeDiff(newStudents) {
+  // Build key map of existing
+  const existing = {};
+  allStudents.forEach(s => { existing[s._id] = s; });
+  const newMap = {};
+  newStudents.forEach(s => { newMap[s._id] = s; });
+
+  const added = [], removed = [], modified = [];
+  newStudents.forEach(s => {
+    if (!existing[s._id]) { added.push(s); }
+    else {
+      const changedFields = ALL_COLS.filter(c => String(existing[s._id][c]??'') !== String(s[c]??''));
+      if (changedFields.length) modified.push({ student: s, changedFields, old: existing[s._id] });
+    }
+  });
+  allStudents.forEach(s => { if (!newMap[s._id]) removed.push(s); });
+
+  pendingImportData = { newStudents, added, removed, modified };
+
+  // Render diff preview
+  let html = '';
+  added.forEach(s => {
+    html += `<div class="diff-item"><span class="diff-tag diff-new">新增</span><span>${escHtml(s['班級'])} ${escHtml(s['座號'])}號 ${escHtml(s['姓名'])} — ${escHtml(s.optimalType)}</span></div>`;
+  });
+  removed.forEach(s => {
+    html += `<div class="diff-item"><span class="diff-tag diff-del">刪除</span><span>${escHtml(s['班級'])} ${escHtml(s['座號'])}號 ${escHtml(s['姓名'])}</span></div>`;
+  });
+  modified.forEach(({student, changedFields, old}) => {
+    const fieldDesc = changedFields.map(f => `${f}: 「${escHtml(String(old[f]??''))}」→「${escHtml(String(student[f]??''))}」`).join('；');
+    html += `<div class="diff-item"><span class="diff-tag diff-mod">修改</span><span>${escHtml(student['班級'])} ${escHtml(student['座號'])}號 ${escHtml(student['姓名'])} | ${fieldDesc}</span></div>`;
+  });
+  if (!html) html = '<div class="diff-item">✅ 無任何變更，資料與現有相同</div>';
+
+  document.getElementById('diff-preview').innerHTML = html;
+  document.getElementById('preview-counts').textContent = `新增 ${added.length} 筆、刪除 ${removed.length} 筆、修改 ${modified.length} 筆`;
+  document.getElementById('import-loading').style.display = 'none';
+  document.getElementById('import-preview').style.display = 'block';
+}
+
+async function confirmImport() {
+  if (!pendingImportData) return;
+  const {newStudents, added, removed, modified} = pendingImportData;
+  document.getElementById('import-loading').style.display = 'block';
+  document.getElementById('import-preview').style.display = 'none';
+
+  try {
+    // Batch write students
+    const batch = writeBatch(db);
+    // Delete removed
+    const existingSnap = await getDocs(collection(db, 'students'));
+    const existingDocs = {};
+    existingSnap.docs.forEach(d => { existingDocs[d.data()._id] = d.id; });
+    removed.forEach(s => { if (existingDocs[s._id]) batch.delete(doc(db, 'students', existingDocs[s._id])); });
+    // Upsert all new
+    newStudents.forEach(s => {
+      const docId = existingDocs[s._id] || db._generateId?.() || s._id.replace(/[^a-zA-Z0-9_-]/g,'_');
+      const ref = existingDocs[s._id] ? doc(db,'students',existingDocs[s._id]) : doc(collection(db,'students'));
+      batch.set(ref, s);
+    });
+    await batch.commit();
+
+    // Save import log
+    const userName = currentUserDoc.customName || currentUser.displayName || currentUser.email;
+    await addDoc(collection(db,'importLogs'), {
+      importedBy: currentUser.uid,
+      importerName: userName,
+      importerEmail: currentUser.email,
+      timestamp: serverTimestamp(),
+      totalCount: newStudents.length,
+      addedCount: added.length,
+      removedCount: removed.length,
+      modifiedCount: modified.length,
+      diffs: {
+        added: added.map(s=>({id:s._id, cls:s['班級'], seat:s['座號'], name:s['姓名'], type:s.optimalType})),
+        removed: removed.map(s=>({id:s._id, cls:s['班級'], seat:s['座號'], name:s['姓名']})),
+        modified: modified.map(({student,changedFields,old})=>({
+          id:student._id, cls:student['班級'], seat:student['座號'], name:student['姓名'],
+          fields: changedFields.map(f=>({field:f, from:old[f], to:student[f]}))
+        }))
+      }
+    });
+
+    pendingImportData = null;
+    document.getElementById('import-loading').style.display = 'none';
+    document.getElementById('file-input').value = '';
+    alert(`✅ 匯入成功！新增 ${added.length}、刪除 ${removed.length}、修改 ${modified.length} 筆`);
+    loadStudentData();
+  } catch(err) {
+    document.getElementById('import-loading').style.display = 'none';
+    alert('匯入失敗：' + err.message);
+    console.error(err);
+  }
+}
+
+// ── LOGS ──
+async function loadLogs() {
+  document.getElementById('logs-loading').style.display = 'block';
+  document.getElementById('logs-list').innerHTML = '';
+  document.getElementById('logs-empty').style.display = 'none';
+  try {
+    const snap = await getDocs(query(collection(db,'importLogs'), orderBy('timestamp','desc')));
+    document.getElementById('logs-loading').style.display = 'none';
+    if (snap.empty) { document.getElementById('logs-empty').style.display = 'block'; return; }
+    let html = '';
+    snap.docs.forEach(d => {
+      const l = d.data();
+      const ts = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString('zh-TW') : '未知時間';
+      html += renderLogEntry(d.id, l, ts, false);
+    });
+    document.getElementById('logs-list').innerHTML = html;
+    attachLogToggles(document.getElementById('logs-list'));
+  } catch(e) {
+    document.getElementById('logs-loading').innerHTML = '❌ 載入失敗：' + e.message;
+  }
+}
+
+function renderLogEntry(id, l, ts, showDelete) {
+  const diffs = l.diffs || {};
+  let diffHtml = '';
+  (diffs.added||[]).forEach(s => { diffHtml += `<div class="diff-item"><span class="diff-tag diff-new">新增</span><span>${escHtml(s.cls)} ${escHtml(String(s.seat))}號 ${escHtml(s.name)} — ${escHtml(s.type||'')}</span></div>`; });
+  (diffs.removed||[]).forEach(s => { diffHtml += `<div class="diff-item"><span class="diff-tag diff-del">刪除</span><span>${escHtml(s.cls)} ${escHtml(String(s.seat))}號 ${escHtml(s.name)}</span></div>`; });
+  (diffs.modified||[]).forEach(m => {
+    const fDesc = (m.fields||[]).map(f=>`${escHtml(f.field)}: 「${escHtml(String(f.from??''))}」→「${escHtml(String(f.to??''))}」`).join('；');
+    diffHtml += `<div class="diff-item"><span class="diff-tag diff-mod">修改</span><span>${escHtml(m.cls)} ${escHtml(String(m.seat))}號 ${escHtml(m.name)} | ${fDesc}</span></div>`;
+  });
+  if (!diffHtml) diffHtml = '<div class="diff-item">無資料變更</div>';
+  const delBtn = showDelete ? `<button class="btn-danger" onclick="deleteLog('${id}')">🗑️ 刪除此紀錄</button>` : '';
+  return `<div class="log-entry" data-id="${id}">
+    <div class="log-header" onclick="this.nextElementSibling.classList.toggle('open')">
+      <div class="log-meta"><strong>📅 ${escHtml(ts)}</strong><span>由 ${escHtml(l.importerName||l.importerEmail||'未知')}</span><span>共 ${l.totalCount||0} 筆 | 新增${l.addedCount||0} 刪除${l.removedCount||0} 修改${l.modifiedCount||0}</span></div>
+      <span style="color:var(--text2);font-size:0.8rem">▼ 展開</span>
+    </div>
+    <div class="log-body">
+      <div style="max-height:250px;overflow-y:auto;">${diffHtml}</div>
+      <div style="margin-top:10px">${delBtn}</div>
+    </div>
+  </div>`;
+}
+
+function attachLogToggles(container) {
+  container.querySelectorAll('.log-header').forEach(h => {
+    h.onclick = () => h.nextElementSibling.classList.toggle('open');
+  });
+}
+
+// ── ADMIN PANEL ──
+async function loadAdminPanel() {
+  if (currentUserDoc.role !== 'admin') return;
+  loadPendingUsers();
+  loadAllUsers();
+  loadAdminLogs();
+}
+
+async function loadPendingUsers() {
+  const snap = await getDocs(collection(db,'users'));
+  const pending = snap.docs.filter(d => d.data().status === 'pending');
+  if (!pending.length) { document.getElementById('pending-list').innerHTML = '<div class="empty-state">目前無待審核使用者 🎉</div>'; return; }
+  let html = '<table class="user-table"><thead><tr><th>Google帳號</th><th>操作</th></tr></thead><tbody>';
+  pending.forEach(d => {
+    const u = d.data();
+    html += `<tr><td><div style="font-weight:600">${escHtml(u.displayName||'')}</div><div style="font-size:0.8rem;color:var(--text2)">${escHtml(u.email)}</div></td>
+    <td style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-success" onclick="approveUser('${d.id}','user')">✅ 核准（一般）</button>
+      <button class="btn-success" onclick="approveUser('${d.id}','admin')" style="background:#eff6ff;color:var(--accent);border-color:#bfdbfe">✅ 核准（管理員）</button>
+      <button class="btn-danger" onclick="denyUser('${d.id}')">❌ 拒絕</button>
+    </td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('pending-list').innerHTML = html;
+}
+
+async function loadAllUsers() {
+  const snap = await getDocs(collection(db,'users'));
+  let html = '<table class="user-table"><thead><tr><th>名稱</th><th>Email</th><th>身份</th><th>操作</th></tr></thead><tbody>';
+  snap.docs.forEach(d => {
+    const u = d.data();
+    const dispName = u.customName || u.displayName || '-';
+    const statusCls = u.status==='active'?'status-active':u.status==='pending'?'status-pending':'status-denied';
+    const roleLabel = u.role==='admin'?'管理員':u.role==='pending'?'待審核':'一般使用者';
+    html += `<tr>
+      <td><strong>${escHtml(dispName)}</strong></td>
+      <td style="font-size:0.82rem">${escHtml(u.email)}</td>
+      <td><span class="${statusCls}">${escHtml(roleLabel)}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-sm" onclick="openRename('${d.id}','${escAttr(dispName)}')">✏️ 改名</button>
+        ${u.role!=='admin'?`<button class="btn-sm" onclick="setRole('${d.id}','admin')">升管理員</button>`:`<button class="btn-sm" onclick="setRole('${d.id}','user')">降一般</button>`}
+        ${d.id !== currentUser.uid ? `<button class="btn-danger" onclick="removeUser('${d.id}')">移除</button>` : ''}
+      </td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('all-users-list').innerHTML = html;
+}
+
+async function loadAdminLogs() {
+  const snap = await getDocs(query(collection(db,'importLogs'), orderBy('timestamp','desc')));
+  if (snap.empty) { document.getElementById('admin-logs-list').innerHTML = '<div class="empty-state">尚無紀錄</div>'; return; }
+  let html = '';
+  snap.docs.forEach(d => {
+    const l = d.data();
+    const ts = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString('zh-TW') : '未知時間';
+    html += renderLogEntry(d.id, l, ts, true);
+  });
+  document.getElementById('admin-logs-list').innerHTML = html;
+  attachLogToggles(document.getElementById('admin-logs-list'));
+}
+
+// ── USER MANAGEMENT ──
+window.approveUser = async (uid, role) => {
+  await updateDoc(doc(db,'users',uid), { role, status:'active', approvedAt: serverTimestamp() });
+  alert('已核准');
+  loadPendingUsers(); loadAllUsers();
+};
+window.denyUser = async (uid) => {
+  if (!confirm('確定拒絕此使用者？')) return;
+  await updateDoc(doc(db,'users',uid), { status:'denied' });
+  loadPendingUsers(); loadAllUsers();
+};
+window.setRole = async (uid, role) => {
+  await updateDoc(doc(db,'users',uid), { role });
+  loadAllUsers();
+};
+window.removeUser = async (uid) => {
+  if (!confirm('確定移除此使用者？')) return;
+  await deleteDoc(doc(db,'users',uid));
+  loadAllUsers();
+};
+window.deleteLog = async (id) => {
+  if (!confirm('確定刪除此匯入紀錄？此操作無法復原。')) return;
+  await deleteDoc(doc(db,'importLogs',id));
+  loadAdminLogs(); loadLogs();
+};
+window.openRename = (uid, currentName) => {
+  renameTargetUid = uid;
+  document.getElementById('rename-input').value = currentName === '-' ? '' : currentName;
+  document.getElementById('rename-modal').classList.add('open');
+  document.getElementById('rename-input').focus();
+};
+window.closeModal = () => {
+  document.getElementById('rename-modal').classList.remove('open');
+  renameTargetUid = null;
+};
+document.getElementById('rename-confirm').onclick = async () => {
+  if (!renameTargetUid) return;
+  const name = document.getElementById('rename-input').value.trim();
+  if (!name) { alert('請輸入名稱'); return; }
+  await updateDoc(doc(db,'users',renameTargetUid), { customName: name });
+  closeModal();
+  loadAllUsers();
+  // Update display if renaming self
+  if (renameTargetUid === currentUser.uid) {
+    document.getElementById('user-display-name').textContent = name;
+    currentUserDoc.customName = name;
+  }
+};
+document.getElementById('rename-modal').onclick = e => { if(e.target===e.currentTarget) closeModal(); };
+
+// ── HELPERS ──
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+</script>
+</body>
+</html>
