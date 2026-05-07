@@ -166,6 +166,8 @@ tbody tr.row-f.mr:hover td { background:#fae3d5; }
 
 /* GENDER CHIP */
 .chip.sx.on { background:#f3e8ff; border-color:#c084fc; color:#7e22ce; font-weight:700; }
+/* Multi chip */
+.chip.multi-chip.on { background:#fef9c3; border-color:#fbbf24; color:#92400e; font-weight:700; }
 
 /* COUNT BADGE on chip */
 .chip .cnt { 
@@ -174,70 +176,83 @@ tbody tr.row-f.mr:hover td { background:#fae3d5; }
 }
 .chip.on .cnt { background:rgba(255,255,255,.35); }
 
-/* COMPACT TABLE - subsidy columns */
+/* COMPACT TABLE */
 .tbl-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border);
   max-height:calc(100vh - 310px); min-height:200px; }
 table { border-collapse:collapse; width:100%; font-size:.81rem; table-layout:fixed; }
 
-/* ── Column widths (default = collapsed) ── */
-table colgroup col.c-seq  { width:30px; }
-table colgroup col.c-cls  { width:32px; }   /* 班級 */
-table colgroup col.c-seat { width:28px; }   /* 座號 */
-table colgroup col.c-name { width:64px; }
-table colgroup col.c-sex  { width:24px; }   /* 性別 */
-table colgroup col.c-idno { width:54px; }
-table colgroup col.c-opt  { width:auto; min-width:78px; }  /* 最優補助身分 always auto */
-table colgroup col.c-sub  { width:46px; }
-table colgroup col.c-sib  { width:58px; }
-table colgroup col.c-multi{ width:38px; }
+/* ── Fixed column widths via data-ci ── */
+/* We set widths on th; td inherits via fixed layout */
+thead th[data-ci="0"]  { width:30px; text-align:center; cursor:default !important; }
+thead th[data-ci="1"]  { width:36px; }   /* 班級 */
+thead th[data-ci="2"]  { width:32px; }   /* 座號 */
+thead th[data-ci="3"]  { width:64px; }   /* 姓名 */
+thead th[data-ci="4"]  { width:26px; }   /* 性別 */
+thead th[data-ci="5"]  { width:56px; }   /* 身分證號 */
+thead th[data-ci="6"]  { width:auto; min-width:90px; } /* 最優補助身分 */
+thead th[data-ci="20"] { width:38px; cursor:default !important; } /* 多重 */
+/* subsidy cols 7-18 and sib 19 default narrow */
+thead th[data-ci="7"],thead th[data-ci="8"],thead th[data-ci="9"],
+thead th[data-ci="10"],thead th[data-ci="11"],thead th[data-ci="12"],
+thead th[data-ci="13"],thead th[data-ci="14"],thead th[data-ci="15"],
+thead th[data-ci="16"],thead th[data-ci="17"],thead th[data-ci="18"] { width:44px; }
+thead th[data-ci="19"] { width:58px; } /* 兄弟姊妹 */
 
-/* ── Expanded column ── */
-table colgroup col.c-expanded { width:auto !important; min-width:130px; }
+/* ── EXPANDED column: .xp on th = header highlight, .xp on td = full content ── */
+thead th.xp-able::after { content:' ↔'; font-size:.58rem; opacity:.35; }
+thead th.xp::after      { content:' ✕'; font-size:.58rem; opacity:.8; color:var(--accent); }
+thead th.xp { color:var(--accent); background:#e8f0fe; }
+thead th.xp-able { cursor:pointer; }
 
-thead th { background:#f4f7fb; padding:7px 6px; text-align:left;
+/* td.xp: show full content */
+tbody td.xp {
+  overflow:visible !important; white-space:nowrap !important;
+  text-overflow:clip; position:relative; z-index:2; background:inherit;
+}
+/* sub-cell.xp.no-val: reveal the empty label faintly */
+tbody td.sub-cell.xp.no-val {
+  color:var(--text3) !important; font-size:.72rem !important;
+  padding-left:5px !important; padding-right:5px !important;
+}
+/* topt always nowrap */
+td.topt { overflow:visible; white-space:nowrap !important;
+  font-weight:700; color:var(--accent); }
+
+/* xp-all: table-level full expand */
+table.xp-all tbody td {
+  overflow:visible !important; white-space:nowrap !important; text-overflow:clip;
+}
+table.xp-all thead th:not([data-ci="0"]):not([data-ci="20"]) {
+  color:var(--accent); background:#e8f0fe;
+}
+table.xp-all tbody td.sub-cell.no-val {
+  color:var(--text3) !important; font-size:.72rem !important;
+  padding-left:5px !important; padding-right:5px !important;
+}
+
+thead th { background:#f4f7fb; padding:7px 5px; text-align:left;
   border-bottom:2px solid var(--border); border-right:1px solid #e8edf3;
   white-space:nowrap; font-weight:700; color:var(--text2); font-size:.71rem;
   position:sticky; top:0; z-index:10; overflow:hidden;
-  cursor:pointer; user-select:none; }
-thead th:first-child { text-align:center; cursor:default; }
-thead th:hover:not(:first-child) { background:#eaf0fb; }
+  cursor:pointer; user-select:none; transition:background .12s, color .12s; }
+thead th:hover:not([data-ci="0"]):not([data-ci="20"]) { background:#eaf0fb; }
 
-/* Expand indicator on header */
-thead th.col-expandable::after { content:' ↔'; font-size:.6rem; opacity:.4; }
-thead th.col-expanded::after   { content:' ✕'; font-size:.6rem; opacity:.7; color:var(--accent); }
-thead th.col-expanded { color:var(--accent); background:#e8f0fe; }
-
-tbody td { padding:6px 6px; border-bottom:1px solid #f0f3f8;
+tbody td { padding:6px 5px; border-bottom:1px solid #f0f3f8;
   border-right:1px solid #f5f7fa; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+tbody tr:hover td { filter:brightness(.97); }
 
-/* Cells in an expanded column — show full content */
-tbody td.col-expanded-cell { 
-  overflow:visible; white-space:normal; word-break:break-all;
-  background:inherit;
-}
-/* But topt is always nowrap even when expanded */
-tbody td.topt.col-expanded-cell { white-space:nowrap !important; word-break:normal; }
-
-/* 最優補助身分: always full, never clip, never wrap */
-td.topt { overflow:visible; white-space:nowrap !important; font-weight:700; color:var(--accent); }
-
-/* Subsidy cell: empty gets min space, value cells show content */
-td.sub-cell { 
-  font-size:.76rem; color:var(--green);
-  font-weight:600; overflow:visible; position:relative; z-index:1;
-  background:inherit;
-}
+/* Subsidy cells */
+td.sub-cell { font-size:.76rem; color:var(--green); font-weight:600;
+  overflow:hidden; }
 td.sub-cell.has-val { overflow:visible; white-space:nowrap; }
-td.sub-cell.no-val  { color:transparent; font-size:.1px; padding-left:2px; padding-right:2px; }
+td.sub-cell.no-val  { color:transparent; font-size:.1px;
+  padding-left:2px; padding-right:2px; }
 
-/* ID number: truncate, full only when column expanded */
-td.idno-cell { 
-  font-size:.74rem; color:var(--text3); 
-  font-family:'JetBrains Mono',monospace;
-  overflow:hidden; text-overflow:ellipsis;
-}
-td.idno-cell.col-expanded-cell { color:var(--text); }
+/* ID cell */
+td.idno-cell { font-size:.74rem; color:var(--text3);
+  font-family:'JetBrains Mono',monospace; overflow:hidden; text-overflow:ellipsis; }
+td.idno-cell.xp { color:var(--text) !important; }
 
 /* IMPORT */
 .uzone{border:2px dashed var(--border);border-radius:var(--radius);
@@ -383,6 +398,7 @@ td.idno-cell.col-expanded-cell { color:var(--text); }
         <div class="cnt-badge" id="cnt-badge-el">結果：<strong id="rcnt">0</strong> 人</div>
         <button class="btn-exp ghost" id="btn-exp-f">⬇ 匯出篩選</button>
         <button class="btn-exp ghost" id="btn-exp-a">⬇ 匯出全部</button>
+        <button class="btn-sm" id="btn-expand-all" title="展開/收合所有欄位">⇔ 全展開</button>
         <div id="edit-ctrl" style="display:none;align-items:center;gap:6px;margin-left:auto">
           <div class="edit-ind" id="edit-ind"><span class="edot"></span>編輯模式</div>
           <button class="btn-edit" id="btn-edit">✏️ 開始編輯</button>
@@ -531,9 +547,11 @@ function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,''); 
 let cUser=null, cDoc=null;
 let term=DEFAULT_TERM;
 let all=[], filt=[];
-let cGrade='all', sCats=new Set(), cSex='all';
-let editOn=false, edits={};   // edits: { docId: { col: newVal } }
+let cGrade='all', sCats=new Set(), cSex='all', cMulti=false;
+let editOn=false, edits={};
 let pendingImp=null;
+let expandedCols=new Set(); // set of ci indexes that are expanded
+let allExpanded=false;
 
 /* ── AUTH ── */
 document.getElementById('btn-login').onclick = ()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
@@ -607,6 +625,12 @@ async function initApp(){
   document.getElementById('btn-exp-a').onclick=()=>doExport(all,'全部');
   document.getElementById('btn-exp-f').onclick=()=>doExport(filt,sCats.size?[...sCats].join('、'):'全部');
   document.getElementById('btn-edit').onclick=toggleEdit;
+  document.getElementById('btn-expand-all').onclick=()=>{
+    allExpanded=!allExpanded;
+    expandedCols.clear();
+    document.getElementById('btn-expand-all').textContent=allExpanded?'⇔ 全收合':'⇔ 全展開';
+    renderTable();
+  };
 
   setupImport();
   setupPromote();
@@ -629,7 +653,7 @@ async function loadTerms(){
     if(editOn&&Object.keys(edits).length&&!confirm('切換學期將放棄未儲存的編輯，繼續？')){sel.value=term;return;}
     exitEdit(false);
     term=sel.value;
-    cGrade='all'; sCats.clear(); cSex='all';
+    cGrade='all'; sCats.clear(); cSex='all'; cMulti=false;
     document.querySelectorAll('.chip.sx').forEach(b=>b.classList.toggle('on',b.dataset.v==='all'));
     document.getElementById('term-badge').textContent=tLabel(term);
     document.getElementById('imp-term').textContent=tLabel(term);
@@ -642,7 +666,8 @@ async function loadTerms(){
 async function loadData(){
   document.getElementById('dload').style.display='block';
   document.getElementById('dcont').style.display='none';
-  expandedColIdx=-1;
+  expandedCols.clear(); allExpanded=false;
+  document.getElementById('btn-expand-all').textContent='⇔ 全展開';
   try{
     const snap=await getDocs(sCol(term));
     all=snap.docs.map(d=>({_docId:d.id,...d.data()}));
@@ -656,19 +681,38 @@ async function loadData(){
 }
 
 /* ── FILTERS ── */
-function countFor(grade, cat, sex) {
-  return all.filter(s =>
-    (grade === 'all' || s.grade === grade) &&
-    (cat   === 'all' || s.optimalType === cat) &&
-    (sex   === 'all' || (s['性別']||'') === sex)
-  ).length;
+// Check if student matches a category chip label
+// A student matches cat X if:
+//   - their optimalType === X  (primary)
+//   - OR any of their subsidy col names contains X  (secondary, for multi-identity students)
+function studentMatchesCat(s, cat) {
+  if (s.optimalType === cat) return true;
+  // Check if the cat label matches any filled subsidy column name
+  return SUBSIDY_COLS.some(col => {
+    const val = String(s[col]||'').trim();
+    if (!val) return false;
+    // col is like "1.低收(社)", cat like "1.低收(社)" — exact match on column name
+    return col === cat;
+  });
+}
+
+// All unique category labels = union of optimalType values + names of filled subsidy cols
+function getAllCatLabels() {
+  const catSet = new Set();
+  all.forEach(s => {
+    catSet.add(s.optimalType);
+    SUBSIDY_COLS.forEach(col => {
+      if (String(s[col]||'').trim()) catSet.add(col);
+    });
+  });
+  return [...catSet].sort();
 }
 
 function buildFilters(){
   const grades = [...new Set(all.map(s=>s.grade))].sort();
-  const cats   = [...new Set(all.map(s=>s.optimalType))].sort();
+  const cats   = getAllCatLabels();
 
-  // Grade chips with count
+  // Grade chips
   let g = `<button class="chip g on" data-v="all">全部<span class="cnt">${all.length}</span></button>`;
   grades.forEach(x=>{
     const n = all.filter(s=>s.grade===x).length;
@@ -676,16 +720,13 @@ function buildFilters(){
   });
   document.getElementById('gc').innerHTML = g;
 
-  // Category chips with count (based on current grade+sex)
   buildCatChips(cats);
 
-  // Grade click handler
   document.querySelectorAll('.chip.g').forEach(b=>{
     b.onclick=()=>{
       cGrade=b.dataset.v;
       document.querySelectorAll('.chip.g').forEach(x=>x.classList.remove('on'));
       b.classList.add('on');
-      // Re-render cat chips with updated counts
       buildCatChips(cats);
       renderTable();
     };
@@ -704,173 +745,196 @@ function buildFilters(){
 }
 
 function buildCatChips(cats) {
-  const totalForGradeSex = all.filter(s=>
-    (cGrade==='all'||s.grade===cGrade) && (cSex==='all'||(s['性別']||'')===cSex)
+  // Base filter (grade + sex + multi) — count from this pool
+  const basePool = all.filter(s=>
+    (cGrade==='all'||s.grade===cGrade) &&
+    (cSex==='all'||(s['性別']||'')===cSex) &&
+    (!cMulti||s.isMulti)
+  );
+
+  const total = basePool.length;
+  const multiCount = all.filter(s=>
+    (cGrade==='all'||s.grade===cGrade) &&
+    (cSex==='all'||(s['性別']||'')===cSex) &&
+    s.isMulti
   ).length;
 
-  let c = `<button class="chip c on" data-v="all">全部類別<span class="cnt">${totalForGradeSex}</span></button>`;
+  let c = `<button class="chip c${sCats.size===0?' on':''}" data-v="all">全部類別<span class="cnt">${total}</span></button>`;
+
+  // Multi-identity chip
+  c += `<button class="chip c multi-chip${cMulti?' on':''}" data-v="__multi__">⭐ 多重身分<span class="cnt">${multiCount}</span></button>`;
+
   cats.forEach(x=>{
-    const n = all.filter(s=>
-      (cGrade==='all'||s.grade===cGrade) &&
-      (cSex==='all'||(s['性別']||'')===cSex) &&
-      s.optimalType===x
-    ).length;
-    if(n===0) return; // hide empty categories
+    // Count: students in basePool who match this cat (via optimalType OR subsidy col)
+    const n = basePool.filter(s => studentMatchesCat(s, x)).length;
+    if(n===0) return;
     c += `<button class="chip c${sCats.has(x)?' on':''}" data-v="${esc(x)}">${esc(x)}<span class="cnt">${n}</span></button>`;
   });
   document.getElementById('cc').innerHTML = c;
 
   document.querySelectorAll('.chip.c').forEach(b=>{
     b.onclick=()=>{
-      const v=b.dataset.v, ab=document.querySelector('.chip.c[data-v="all"]');
+      const v=b.dataset.v;
+      const ab=document.querySelector('.chip.c[data-v="all"]');
+      const mb=document.querySelector('.chip.c[data-v="__multi__"]');
+
       if(v==='all'){
-        sCats.clear();
+        sCats.clear(); cMulti=false;
         document.querySelectorAll('.chip.c').forEach(x=>x.classList.remove('on'));
         ab.classList.add('on');
+      } else if(v==='__multi__'){
+        cMulti=!cMulti;
+        mb.classList.toggle('on', cMulti);
+        if(cMulti) ab.classList.remove('on');
+        else if(!sCats.size) ab.classList.add('on');
       } else {
         ab.classList.remove('on');
         if(sCats.has(v)){sCats.delete(v);b.classList.remove('on');}
         else{sCats.add(v);b.classList.add('on');}
-        if(!sCats.size) ab.classList.add('on');
+        if(!sCats.size&&!cMulti) ab.classList.add('on');
       }
+      buildCatChips(cats);
       renderTable();
     };
   });
 }
 
 /* ── RENDER TABLE ── */
-// Track which column index is currently expanded (-1 = none)
-let expandedColIdx = -1;
+let expandedColIdx = -1; // kept for compat but we use expandedCols Set now
 
 function renderTable(){
-  filt=all.filter(s=>
-    (cGrade==='all'||s.grade===cGrade) &&
-    (sCats.size===0||sCats.has(s.optimalType)) &&
-    (cSex==='all'||(s['性別']||'')===cSex)
+  // Filter
+  filt = all.filter(s=>
+    (cGrade==='all' || s.grade===cGrade) &&
+    (cSex==='all'   || (s['性別']||'')===cSex) &&
+    (!cMulti        || s.isMulti) &&
+    (sCats.size===0 || [...sCats].some(cat=>studentMatchesCat(s,cat)))
   );
   filt.sort((a,b)=>{
     const ca=String(a['班級']||''),cb=String(b['班級']||'');
-    if(ca!==cb)return ca.localeCompare(cb,'zh-TW');
+    if(ca!==cb) return ca.localeCompare(cb,'zh-TW');
     return Number(a['座號']||0)-Number(b['座號']||0);
   });
 
-  // Count badge — use the toolbar div directly, not closest() which breaks after re-render
-  const mCnt = filt.filter(s=>(s['性別']||'')==='男').length;
-  const fCnt = filt.filter(s=>(s['性別']||'')==='女').length;
-  document.getElementById('cnt-badge-el').innerHTML =
+  // Count badge
+  const mCnt=filt.filter(s=>(s['性別']||'')==='男').length;
+  const fCnt=filt.filter(s=>(s['性別']||'')==='女').length;
+  document.getElementById('cnt-badge-el').innerHTML=
     `結果：<strong>${filt.length}</strong> 人
     <span style="margin-left:6px;font-size:.74rem;color:#2563eb">🔵男 ${mCnt}</span>
     <span style="margin-left:4px;font-size:.74rem;color:#db2777">🔴女 ${fCnt}</span>`;
 
-  const empty=document.getElementById('dempty'), tbl=document.getElementById('thead').parentElement;
+  const empty=document.getElementById('dempty');
+  const tbl  =document.getElementById('thead').parentElement;
   if(!filt.length){empty.style.display='block';tbl.style.display='none';return;}
   empty.style.display='none'; tbl.style.display='';
   document.getElementById('tblwrap').classList[editOn?'add':'remove']('em-on');
 
+  // Apply / remove xp-all class on table
+  if(allExpanded) tbl.classList.add('xp-all');
+  else            tbl.classList.remove('xp-all');
+  tbl.removeAttribute('data-xp');
+
   const subsidyCols2 = ALL_COLS.slice(6,18);
 
-  // Column index map (0-based, col 0 = #)
-  // 0:#  1:班級  2:座號  3:姓名  4:性別  5:身分證號  6:最優補助身分
-  // 7-18: subsidy cols   19:兄弟姊妹  20:多重
-  const OPT_IDX = 6;  // 最優補助身分 — always expanded
+  // ci map: 0=#  1=班級  2=座號  3=姓名  4=性別  5=身分證號  6=最優補助身分
+  //         7-18=subsidy  19=兄弟姊妹  20=多重
+  const isXp = ci => allExpanded || expandedCols.has(ci);
 
-  const colgroup = `<colgroup>
-    <col class="c-seq" data-ci="0">
-    <col class="c-cls" data-ci="1"><col class="c-seat" data-ci="2">
-    <col class="c-name" data-ci="3"><col class="c-sex" data-ci="4">
-    <col class="c-idno" data-ci="5">
-    <col class="${OPT_IDX===expandedColIdx?'c-expanded':'c-opt'}" data-ci="${OPT_IDX}">
-    ${subsidyCols2.map((_,i)=>`<col class="${7+i===expandedColIdx?'c-expanded':'c-sub'}" data-ci="${7+i}">`).join('')}
-    <col class="${19===expandedColIdx?'c-expanded':'c-sib'}" data-ci="19">
-    <col class="c-multi" data-ci="20">
-  </colgroup>`;
+  // Full column names for header (no truncation)
+  const headerDefs = [
+    {ci:0, label:'#', noExpand:true},
+    {ci:1, label:'班級'}, {ci:2, label:'座號'}, {ci:3, label:'姓名'}, {ci:4, label:'性別'},
+    {ci:5, label:'身分證號'}, {ci:6, label:'最優補助身分', alwaysOpen:true},
+    ...subsidyCols2.map((c,i)=>({ci:7+i, label:c})),
+    {ci:19, label:'兄弟姊妹'},
+    {ci:20, label:'多重', noExpand:true}
+  ];
 
-  // Header labels
-  const allHeaders = ['#','班級','座號','姓名','性別','身分證號','最優補助身分',
-    ...subsidyCols2.map(c=>c.replace(/\(.*?\)/g,'').trim()),
-    '兄弟姊妹','多重'];
-  const allHeadersFull = ['#','班級','座號','姓名','性別','身分證號','最優補助身分',
-    ...subsidyCols2,'兄弟姊妹','多重'];
-
-  const headerCells = allHeaders.map((label,ci)=>{
-    if(ci===0) return `<th data-ci="0" style="cursor:default">#</th>`;
-    const isExp   = ci===expandedColIdx;
-    const isOpt   = ci===OPT_IDX; // always show full, mark as expanded-style
-    const expCls  = isExp ? 'col-expanded' : (isOpt ? '' : 'col-expandable');
-    const fullLbl = allHeadersFull[ci];
-    return `<th data-ci="${ci}" class="${expCls}" title="${esc(fullLbl)}">${esc(label)}</th>`;
+  // Build header
+  const headerRow = headerDefs.map(({ci,label,noExpand,alwaysOpen})=>{
+    const xp = alwaysOpen || isXp(ci);
+    const cls = noExpand||alwaysOpen ? '' : (xp ? 'xp' : 'xp-able');
+    const style = ci===0 ? 'style="text-align:center"' : '';
+    return `<th data-ci="${ci}" class="${cls}" ${style} title="${esc(label)}">${esc(label)}</th>`;
   }).join('');
 
-  document.getElementById('thead').innerHTML = `${colgroup}<tr>${headerCells}</tr>`;
+  document.getElementById('thead').innerHTML = `<tr>${headerRow}</tr>`;
 
-  // Attach header click to toggle expand
+  // Header click to toggle column expand
   document.querySelectorAll('#thead th[data-ci]').forEach(th=>{
     const ci=parseInt(th.dataset.ci);
-    if(ci===0||ci===20) return; // # and 多重 not expandable
+    if(th.classList.contains('') && !th.classList.contains('xp-able') && !th.classList.contains('xp')) return;
     th.onclick=()=>{
-      expandedColIdx = (expandedColIdx===ci) ? -1 : ci;
-      renderTable(); // re-render with new expanded state
+      if(allExpanded) return; // in full-expand mode, click does nothing
+      if(expandedCols.has(ci)) expandedCols.delete(ci);
+      else expandedCols.add(ci);
+      renderTable();
     };
   });
 
+  // Set data-xp on table for CSS single-col expand (if exactly one col expanded and not allExpanded)
+  // Actually we handle expand via .xp class on th/td directly — no data attr needed
+
   // Body rows
   document.getElementById('tbody').innerHTML = filt.map((s,i)=>{
-    const ch      = edits[s._docId]||{};
-    const gender  = s['性別']||'';
-    const isMulti = s.isMulti;
-    const gClass  = gender==='男' ? 'row-m' : gender==='女' ? 'row-f' : '';
-    const multi   = isMulti ? `<span class="mbadge">★${s.multiCount}</span>` : '';
+    const ch     = edits[s._docId]||{};
+    const gender = s['性別']||'';
+    const gCls   = gender==='男'?'row-m':gender==='女'?'row-f':'';
+    const multi  = s.isMulti?`<span class="mbadge">★${s.multiCount}</span>`:'';
 
-    const makeCell = (col, ci, extraClass='') => {
-      const raw   = ch[col]!==undefined ? ch[col] : (s[col]??'');
-      const v     = esc(String(raw));
-      const chg   = ch[col]!==undefined ? ' cc' : '';
-      const expCl = (ci===expandedColIdx||ci===OPT_IDX) ? ' col-expanded-cell' : '';
-      const cls   = `${extraClass}${chg}${expCl}`.trim();
-      if(editOn) return `<td class="ec ${cls}" data-ci="${ci}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
+    const cell=(col,ci,extraCls='')=>{
+      const raw = ch[col]!==undefined ? ch[col] : (s[col]??'');
+      const v   = esc(String(raw));
+      const chg = ch[col]!==undefined?' cc':'';
+      const xp  = (isXp(ci)||ci===6) ? ' xp' : ''; // ci=6 always xp
+      const cls = `${extraCls}${chg}${xp}`.trim();
+      if(editOn) return `<td class="ec ${cls}" data-ci="${ci}"
+        onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
       return `<td class="${cls}" data-ci="${ci}">${v}</td>`;
     };
 
-    const seqCell  = `<td class="tseq" data-ci="0">${i+1}</td>`;
-    const clsCell  = makeCell('班級',   1);
-    const seatCell = makeCell('座號',   2);
-    const nameCell = makeCell('姓名',   3);
-    const sexCell  = makeCell('性別',   4);
+    const seqCell = `<td class="tseq" data-ci="0">${i+1}</td>`;
 
-    // ID cell (ci=5)
-    const idRaw  = ch['身分證號']!==undefined ? ch['身分證號'] : (s['身分證號']??'');
-    const idChg  = ch['身分證號']!==undefined ? ' cc' : '';
-    const idExp  = expandedColIdx===5 ? ' col-expanded-cell' : '';
-    const idCls  = `idno-cell${idChg}${idExp}`;
-    const idCell = editOn
-      ? `<td class="ec ${idCls}" data-ci="5" onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`
-      : `<td class="${idCls}" data-ci="5" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
+    // ID (ci=5): truncated unless expanded
+    const idRaw=ch['身分證號']!==undefined?ch['身分證號']:(s['身分證號']??'');
+    const idXp=(isXp(5)||allExpanded)?' xp':'';
+    const idChg=ch['身分證號']!==undefined?' cc':'';
+    const idCls=`idno-cell${idChg}${idXp}`;
+    const idCell=editOn
+      ?`<td class="ec ${idCls}" data-ci="5" title="${esc(String(idRaw))}"
+         onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)">${esc(String(idRaw))}</td>`
+      :`<td class="${idCls}" data-ci="5" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
 
-    // 最優補助身分 (ci=6) — always expanded, no truncation
-    const optRaw = ch['最優補助身分']!==undefined ? ch['最優補助身分'] : (s['最優補助身分']??'');
-    const optChg = ch['最優補助身分']!==undefined ? ' cc' : '';
-    const optCell= editOn
-      ? `<td class="ec topt${optChg} col-expanded-cell" data-ci="6" onclick="sEdit(this,'${escA(s._docId)}','最優補助身分',\`${escA(String(optRaw))}\`)">${esc(String(optRaw))}</td>`
-      : `<td class="topt${optChg} col-expanded-cell" data-ci="6">${esc(String(optRaw))}</td>`;
+    // 最優補助身分 (ci=6) always open
+    const optRaw=ch['最優補助身分']!==undefined?ch['最優補助身分']:(s['最優補助身分']??'');
+    const optChg=ch['最優補助身分']!==undefined?' cc':'';
+    const optCell=editOn
+      ?`<td class="ec topt xp${optChg}" data-ci="6"
+         onclick="sEdit(this,'${escA(s._docId)}','最優補助身分',\`${escA(String(optRaw))}\`)">${esc(String(optRaw))}</td>`
+      :`<td class="topt xp${optChg}" data-ci="6">${esc(String(optRaw))}</td>`;
 
-    // Subsidy cells (ci=7..18)
-    const subCells = subsidyCols2.map((col,si)=>{
-      const ci     = 7+si;
-      const raw    = ch[col]!==undefined ? ch[col] : (s[col]??'');
-      const hasVal = String(raw).trim()!=='';
-      const v      = hasVal ? esc(String(raw)) : '';
-      const chg    = ch[col]!==undefined ? ' cc' : '';
-      const expCl  = ci===expandedColIdx ? ' col-expanded-cell' : '';
-      const cls    = `sub-cell ${hasVal?'has-val':'no-val'}${chg}${expCl}`;
-      if(editOn) return `<td class="${cls} ec" data-ci="${ci}" title="${esc(col)}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
-      return `<td class="${cls}" data-ci="${ci}" title="${hasVal?esc(col+': '+String(raw)):esc(col)}">${v}</td>`;
+    // Subsidy cells (ci 7-18)
+    const subCells=subsidyCols2.map((col,si)=>{
+      const ci    = 7+si;
+      const raw   = ch[col]!==undefined?ch[col]:(s[col]??'');
+      const hasVal= String(raw).trim()!=='';
+      const v     = esc(String(raw));
+      const chg   = ch[col]!==undefined?' cc':'';
+      const xp    = (isXp(ci)||allExpanded)?' xp':'';
+      const valCls= hasVal?'has-val':'no-val';
+      const cls   = `sub-cell ${valCls}${chg}${xp}`;
+      const title = `title="${esc(col)}"`;
+      if(editOn) return `<td class="${cls} ec" data-ci="${ci}" ${title}
+        onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${hasVal?v:''}</td>`;
+      return `<td class="${cls}" data-ci="${ci}" ${title}>${hasVal?v:''}</td>`;
     }).join('');
 
-    // 兄弟姊妹 (ci=19)
-    const sibCell = makeCell('兄弟姊妹', 19);
+    const sibCell=cell('兄弟姊妹',19);
 
-    return `<tr class="${gClass}${isMulti?' mr':''}">
-      ${seqCell}${clsCell}${seatCell}${nameCell}${sexCell}${idCell}${optCell}${subCells}${sibCell}
+    return `<tr class="${gCls}${s.isMulti?' mr':''}">
+      ${seqCell}${cell('班級',1)}${cell('座號',2)}${cell('姓名',3)}${cell('性別',4)}
+      ${idCell}${optCell}${subCells}${sibCell}
       <td data-ci="20">${multi}</td>
     </tr>`;
   }).join('');
