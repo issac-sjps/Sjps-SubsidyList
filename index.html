@@ -178,76 +178,71 @@ tbody tr.row-f.mr:hover td { background:#fae3d5; }
 
 /* COMPACT TABLE */
 .tbl-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border);
-  max-height:calc(100vh - 310px); min-height:200px; }
-table { border-collapse:collapse; width:100%; font-size:.81rem; table-layout:fixed; }
+  max-height:calc(100vh - 310px); min-height:200px; position:relative; }
+table { border-collapse:collapse; font-size:.81rem; table-layout:fixed; width:100%; }
 
-/* ── Fixed column widths via data-ci ── */
-/* We set widths on th; td inherits via fixed layout */
-thead th[data-ci="0"]  { width:30px; text-align:center; cursor:default !important; }
-thead th[data-ci="1"]  { width:36px; }   /* 班級 */
-thead th[data-ci="2"]  { width:32px; }   /* 座號 */
-thead th[data-ci="3"]  { width:64px; }   /* 姓名 */
-thead th[data-ci="4"]  { width:26px; }   /* 性別 */
-thead th[data-ci="5"]  { width:56px; }   /* 身分證號 */
-thead th[data-ci="6"]  { width:auto; min-width:90px; } /* 最優補助身分 */
-thead th[data-ci="20"] { width:38px; cursor:default !important; } /* 多重 */
-/* subsidy cols 7-18 and sib 19 default narrow */
-thead th[data-ci="7"],thead th[data-ci="8"],thead th[data-ci="9"],
-thead th[data-ci="10"],thead th[data-ci="11"],thead th[data-ci="12"],
-thead th[data-ci="13"],thead th[data-ci="14"],thead th[data-ci="15"],
-thead th[data-ci="16"],thead th[data-ci="17"],thead th[data-ci="18"] { width:44px; }
-thead th[data-ci="19"] { width:58px; } /* 兄弟姊妹 */
+/* Default column widths — set via inline style on th by JS (resizable) */
+thead th {
+  background:#f4f7fb; padding:7px 6px 7px 6px; text-align:left;
+  border-bottom:2px solid var(--border); border-right:1px solid #c8d0da;
+  white-space:nowrap; font-weight:700; color:var(--text2); font-size:.71rem;
+  position:sticky; top:0; z-index:10; overflow:hidden;
+  user-select:none; box-sizing:border-box;
+  /* relative so resize handle can be absolute inside */
+  position:sticky;
+}
+thead th[data-ci="0"] { text-align:center; }
 
-/* ── EXPANDED column: .xp on th = header highlight, .xp on td = full content ── */
-thead th.xp-able::after { content:' ↔'; font-size:.58rem; opacity:.35; }
-thead th.xp::after      { content:' ✕'; font-size:.58rem; opacity:.8; color:var(--accent); }
+/* Resize handle — sits on right edge of each th */
+.col-resize-handle {
+  position:absolute; right:0; top:0; bottom:0; width:5px;
+  cursor:col-resize; z-index:20;
+  background:transparent;
+  transition:background .15s;
+}
+.col-resize-handle:hover, .col-resize-handle.dragging {
+  background:var(--accent);
+  opacity:.5;
+}
+
+/* Column header: expandable hint */
+thead th .th-label { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+thead th.xp-able .th-label::after { content:' ↔'; font-size:.56rem; opacity:.3; }
+thead th.xp .th-label::after      { content:' ✕'; font-size:.56rem; opacity:.8; }
 thead th.xp { color:var(--accent); background:#e8f0fe; }
-thead th.xp-able { cursor:pointer; }
+thead th:hover:not([data-ci="0"]):not([data-ci="20"]) { background:#eaf0fb; }
 
-/* td.xp: show full content */
+tbody td {
+  padding:6px 6px; border-bottom:1px solid #f0f3f8;
+  border-right:1px solid #f2f5f8; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;
+  box-sizing:border-box;
+}
+tbody tr:hover td { background:#f6f8fb; }
+tbody tr.row-m td { background:#f0f7ff; }
+tbody tr.row-m:hover td { background:#e4f0fd; }
+tbody tr.row-m.mr td { background:#fdf6e3; }
+tbody tr.row-f td { background:#fdf2f8; }
+tbody tr.row-f:hover td { background:#fce4f3; }
+tbody tr.row-f.mr td { background:#fdf0e8; }
+
+/* td.xp — expanded: show full content (used for individual col expand) */
 tbody td.xp {
   overflow:visible !important; white-space:nowrap !important;
   text-overflow:clip; position:relative; z-index:2; background:inherit;
 }
-/* sub-cell.xp.no-val: reveal the empty label faintly */
 tbody td.sub-cell.xp.no-val {
   color:var(--text3) !important; font-size:.72rem !important;
   padding-left:5px !important; padding-right:5px !important;
 }
-/* topt always nowrap */
-td.topt { overflow:visible; white-space:nowrap !important;
-  font-weight:700; color:var(--accent); }
 
-/* xp-all: table-level full expand */
-table.xp-all tbody td {
-  overflow:visible !important; white-space:nowrap !important; text-overflow:clip;
-}
-table.xp-all thead th:not([data-ci="0"]):not([data-ci="20"]) {
-  color:var(--accent); background:#e8f0fe;
-}
-table.xp-all tbody td.sub-cell.no-val {
-  color:var(--text3) !important; font-size:.72rem !important;
-  padding-left:5px !important; padding-right:5px !important;
-}
-
-thead th { background:#f4f7fb; padding:7px 5px; text-align:left;
-  border-bottom:2px solid var(--border); border-right:1px solid #e8edf3;
-  white-space:nowrap; font-weight:700; color:var(--text2); font-size:.71rem;
-  position:sticky; top:0; z-index:10; overflow:hidden;
-  cursor:pointer; user-select:none; transition:background .12s, color .12s; }
-thead th:hover:not([data-ci="0"]):not([data-ci="20"]) { background:#eaf0fb; }
-
-tbody td { padding:6px 5px; border-bottom:1px solid #f0f3f8;
-  border-right:1px solid #f5f7fa; overflow:hidden;
-  text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
-tbody tr:hover td { filter:brightness(.97); }
+/* topt: always show full, no wrap */
+td.topt { overflow:visible; white-space:nowrap !important; font-weight:700; color:var(--accent); }
 
 /* Subsidy cells */
-td.sub-cell { font-size:.76rem; color:var(--green); font-weight:600;
-  overflow:hidden; }
+td.sub-cell { font-size:.76rem; color:var(--green); font-weight:600; overflow:hidden; }
 td.sub-cell.has-val { overflow:visible; white-space:nowrap; }
-td.sub-cell.no-val  { color:transparent; font-size:.1px;
-  padding-left:2px; padding-right:2px; }
+td.sub-cell.no-val  { color:transparent; font-size:.1px; padding-left:1px; padding-right:1px; }
 
 /* ID cell */
 td.idno-cell { font-size:.74rem; color:var(--text3);
@@ -398,7 +393,8 @@ td.idno-cell.xp { color:var(--text) !important; }
         <div class="cnt-badge" id="cnt-badge-el">結果：<strong id="rcnt">0</strong> 人</div>
         <button class="btn-exp ghost" id="btn-exp-f">⬇ 匯出篩選</button>
         <button class="btn-exp ghost" id="btn-exp-a">⬇ 匯出全部</button>
-        <button class="btn-sm" id="btn-expand-all" title="展開/收合所有欄位">⇔ 全展開</button>
+        <button class="btn-sm" id="btn-expand-all" title="自動調整所有欄位到最適寬度（同 Excel 雙擊欄框）">⇔ 自動欄寬</button>
+        <button class="btn-sm" id="btn-reset-widths" title="還原預設欄寬">↺ 還原</button>
         <div id="edit-ctrl" style="display:none;align-items:center;gap:6px;margin-left:auto">
           <div class="edit-ind" id="edit-ind"><span class="edot"></span>編輯模式</div>
           <button class="btn-edit" id="btn-edit">✏️ 開始編輯</button>
@@ -626,9 +622,11 @@ async function initApp(){
   document.getElementById('btn-exp-f').onclick=()=>doExport(filt,sCats.size?[...sCats].join('、'):'全部');
   document.getElementById('btn-edit').onclick=toggleEdit;
   document.getElementById('btn-expand-all').onclick=()=>{
-    allExpanded=!allExpanded;
-    expandedCols.clear();
-    document.getElementById('btn-expand-all').textContent=allExpanded?'⇔ 全收合':'⇔ 全展開';
+    autoFitColumns();
+  };
+  document.getElementById('btn-reset-widths').onclick=()=>{
+    colWidths={...DEFAULT_WIDTHS};
+    expandedCols.clear(); allExpanded=false;
     renderTable();
   };
 
@@ -667,7 +665,7 @@ async function loadData(){
   document.getElementById('dload').style.display='block';
   document.getElementById('dcont').style.display='none';
   expandedCols.clear(); allExpanded=false;
-  document.getElementById('btn-expand-all').textContent='⇔ 全展開';
+  colWidths={...DEFAULT_WIDTHS};
   try{
     const snap=await getDocs(sCol(term));
     all=snap.docs.map(d=>({_docId:d.id,...d.data()}));
@@ -799,11 +797,19 @@ function buildCatChips(cats) {
   });
 }
 
-/* ── RENDER TABLE ── */
-let expandedColIdx = -1; // kept for compat but we use expandedCols Set now
+/* ── RENDER TABLE + COLUMN RESIZE ── */
+let expandedColIdx = -1;
+
+// Default widths (px) per ci — user can drag to override, stored in colWidths
+const DEFAULT_WIDTHS = {
+  0:32, 1:38, 2:32, 3:66, 4:28, 5:56,
+  6:130, // 最優補助身分 — wider default but not infinite
+  7:46,8:46,9:46,10:46,11:46,12:46,13:46,14:46,15:46,16:46,17:46,18:46,
+  19:60, 20:38
+};
+let colWidths = {...DEFAULT_WIDTHS};
 
 function renderTable(){
-  // Filter
   filt = all.filter(s=>
     (cGrade==='all' || s.grade===cGrade) &&
     (cSex==='all'   || (s['性別']||'')===cSex) &&
@@ -816,7 +822,6 @@ function renderTable(){
     return Number(a['座號']||0)-Number(b['座號']||0);
   });
 
-  // Count badge
   const mCnt=filt.filter(s=>(s['性別']||'')==='男').length;
   const fCnt=filt.filter(s=>(s['性別']||'')==='女').length;
   document.getElementById('cnt-badge-el').innerHTML=
@@ -828,20 +833,14 @@ function renderTable(){
   const tbl  =document.getElementById('thead').parentElement;
   if(!filt.length){empty.style.display='block';tbl.style.display='none';return;}
   empty.style.display='none'; tbl.style.display='';
+  tbl.classList.remove('xp-all');
+  tbl.style.width=''; // let it size naturally
+
   document.getElementById('tblwrap').classList[editOn?'add':'remove']('em-on');
 
-  // Apply / remove xp-all class on table
-  if(allExpanded) tbl.classList.add('xp-all');
-  else            tbl.classList.remove('xp-all');
-  tbl.removeAttribute('data-xp');
-
   const subsidyCols2 = ALL_COLS.slice(6,18);
+  const isXp = ci => expandedCols.has(ci);
 
-  // ci map: 0=#  1=班級  2=座號  3=姓名  4=性別  5=身分證號  6=最優補助身分
-  //         7-18=subsidy  19=兄弟姊妹  20=多重
-  const isXp = ci => allExpanded || expandedCols.has(ci);
-
-  // Full column names for header (no truncation)
   const headerDefs = [
     {ci:0, label:'#', noExpand:true},
     {ci:1, label:'班級'}, {ci:2, label:'座號'}, {ci:3, label:'姓名'}, {ci:4, label:'性別'},
@@ -851,62 +850,68 @@ function renderTable(){
     {ci:20, label:'多重', noExpand:true}
   ];
 
-  // Build header
+  // Build colgroup with pixel widths
+  const colgroup = `<colgroup>${headerDefs.map(({ci})=>
+    `<col data-ci="${ci}" style="width:${colWidths[ci]||46}px">`
+  ).join('')}</colgroup>`;
+
+  // Build header row
   const headerRow = headerDefs.map(({ci,label,noExpand,alwaysOpen})=>{
-    const xp = alwaysOpen || isXp(ci);
+    const xp  = alwaysOpen || isXp(ci);
     const cls = noExpand||alwaysOpen ? '' : (xp ? 'xp' : 'xp-able');
-    const style = ci===0 ? 'style="text-align:center"' : '';
-    return `<th data-ci="${ci}" class="${cls}" ${style} title="${esc(label)}">${esc(label)}</th>`;
+    const w   = colWidths[ci]||46;
+    // Resize handle for all except # and 多重
+    const handle = (noExpand && (ci===0||ci===20)) ? '' :
+      `<span class="col-resize-handle" data-ci="${ci}" onmousedown="startResize(event,${ci})"></span>`;
+    return `<th data-ci="${ci}" class="${cls}" style="width:${w}px;min-width:${w}px" title="${esc(label)}">
+      <span class="th-label">${esc(label)}</span>${handle}
+    </th>`;
   }).join('');
 
-  document.getElementById('thead').innerHTML = `<tr>${headerRow}</tr>`;
+  document.getElementById('thead').innerHTML = `${colgroup}<tr>${headerRow}</tr>`;
 
-  // Header click to toggle column expand
-  document.querySelectorAll('#thead th[data-ci]').forEach(th=>{
-    const ci=parseInt(th.dataset.ci);
-    if(th.classList.contains('') && !th.classList.contains('xp-able') && !th.classList.contains('xp')) return;
-    th.onclick=()=>{
-      if(allExpanded) return; // in full-expand mode, click does nothing
+  // Header click → toggle expand (only on label, not handle)
+  document.querySelectorAll('#thead th[data-ci] .th-label').forEach(lbl=>{
+    const th = lbl.closest('th');
+    const ci = parseInt(th.dataset.ci);
+    if(!th.classList.contains('xp-able')&&!th.classList.contains('xp')) return;
+    lbl.style.cursor='pointer';
+    lbl.onclick=(e)=>{
+      e.stopPropagation();
       if(expandedCols.has(ci)) expandedCols.delete(ci);
       else expandedCols.add(ci);
       renderTable();
     };
   });
 
-  // Set data-xp on table for CSS single-col expand (if exactly one col expanded and not allExpanded)
-  // Actually we handle expand via .xp class on th/td directly — no data attr needed
-
   // Body rows
   document.getElementById('tbody').innerHTML = filt.map((s,i)=>{
-    const ch     = edits[s._docId]||{};
-    const gender = s['性別']||'';
-    const gCls   = gender==='男'?'row-m':gender==='女'?'row-f':'';
-    const multi  = s.isMulti?`<span class="mbadge">★${s.multiCount}</span>`:'';
+    const ch    = edits[s._docId]||{};
+    const gender= s['性別']||'';
+    const gCls  = gender==='男'?'row-m':gender==='女'?'row-f':'';
+    const multi = s.isMulti?`<span class="mbadge">★${s.multiCount}</span>`:'';
 
     const cell=(col,ci,extraCls='')=>{
-      const raw = ch[col]!==undefined ? ch[col] : (s[col]??'');
-      const v   = esc(String(raw));
-      const chg = ch[col]!==undefined?' cc':'';
-      const xp  = (isXp(ci)||ci===6) ? ' xp' : ''; // ci=6 always xp
-      const cls = `${extraCls}${chg}${xp}`.trim();
+      const raw=ch[col]!==undefined?ch[col]:(s[col]??'');
+      const v=esc(String(raw));
+      const chg=ch[col]!==undefined?' cc':'';
+      const xp=(isXp(ci)||ci===6)?' xp':'';
+      const cls=`${extraCls}${chg}${xp}`.trim();
       if(editOn) return `<td class="ec ${cls}" data-ci="${ci}"
         onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
       return `<td class="${cls}" data-ci="${ci}">${v}</td>`;
     };
 
-    const seqCell = `<td class="tseq" data-ci="0">${i+1}</td>`;
+    const seqCell=`<td class="tseq" data-ci="0">${i+1}</td>`;
 
-    // ID (ci=5): truncated unless expanded
     const idRaw=ch['身分證號']!==undefined?ch['身分證號']:(s['身分證號']??'');
-    const idXp=(isXp(5)||allExpanded)?' xp':'';
+    const idXp=isXp(5)?' xp':'';
     const idChg=ch['身分證號']!==undefined?' cc':'';
-    const idCls=`idno-cell${idChg}${idXp}`;
     const idCell=editOn
-      ?`<td class="ec ${idCls}" data-ci="5" title="${esc(String(idRaw))}"
+      ?`<td class="ec idno-cell${idChg}${idXp}" data-ci="5" title="${esc(String(idRaw))}"
          onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)">${esc(String(idRaw))}</td>`
-      :`<td class="${idCls}" data-ci="5" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
+      :`<td class="idno-cell${idChg}${idXp}" data-ci="5" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
 
-    // 最優補助身分 (ci=6) always open
     const optRaw=ch['最優補助身分']!==undefined?ch['最優補助身分']:(s['最優補助身分']??'');
     const optChg=ch['最優補助身分']!==undefined?' cc':'';
     const optCell=editOn
@@ -914,24 +919,20 @@ function renderTable(){
          onclick="sEdit(this,'${escA(s._docId)}','最優補助身分',\`${escA(String(optRaw))}\`)">${esc(String(optRaw))}</td>`
       :`<td class="topt xp${optChg}" data-ci="6">${esc(String(optRaw))}</td>`;
 
-    // Subsidy cells (ci 7-18)
     const subCells=subsidyCols2.map((col,si)=>{
-      const ci    = 7+si;
-      const raw   = ch[col]!==undefined?ch[col]:(s[col]??'');
-      const hasVal= String(raw).trim()!=='';
-      const v     = esc(String(raw));
-      const chg   = ch[col]!==undefined?' cc':'';
-      const xp    = (isXp(ci)||allExpanded)?' xp':'';
-      const valCls= hasVal?'has-val':'no-val';
-      const cls   = `sub-cell ${valCls}${chg}${xp}`;
-      const title = `title="${esc(col)}"`;
-      if(editOn) return `<td class="${cls} ec" data-ci="${ci}" ${title}
+      const ci=7+si;
+      const raw=ch[col]!==undefined?ch[col]:(s[col]??'');
+      const hasVal=String(raw).trim()!=='';
+      const v=esc(String(raw));
+      const chg=ch[col]!==undefined?' cc':'';
+      const xp=isXp(ci)?' xp':'';
+      const cls=`sub-cell ${hasVal?'has-val':'no-val'}${chg}${xp}`;
+      if(editOn) return `<td class="${cls} ec" data-ci="${ci}" title="${esc(col)}"
         onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${hasVal?v:''}</td>`;
-      return `<td class="${cls}" data-ci="${ci}" ${title}>${hasVal?v:''}</td>`;
+      return `<td class="${cls}" data-ci="${ci}" title="${esc(col)}">${hasVal?v:''}</td>`;
     }).join('');
 
     const sibCell=cell('兄弟姊妹',19);
-
     return `<tr class="${gCls}${s.isMulti?' mr':''}">
       ${seqCell}${cell('班級',1)}${cell('座號',2)}${cell('姓名',3)}${cell('性別',4)}
       ${idCell}${optCell}${subCells}${sibCell}
@@ -939,6 +940,84 @@ function renderTable(){
     </tr>`;
   }).join('');
 }
+
+/* ── COLUMN RESIZE ── */
+let _resizeCi=-1, _resizeStartX=0, _resizeStartW=0;
+
+window.startResize=function(e, ci){
+  e.preventDefault(); e.stopPropagation();
+  _resizeCi=ci; _resizeStartX=e.clientX;
+  _resizeStartW=colWidths[ci]||46;
+  document.querySelector(`.col-resize-handle[data-ci="${ci}"]`)?.classList.add('dragging');
+  document.addEventListener('mousemove', onResize);
+  document.addEventListener('mouseup',   endResize);
+};
+function onResize(e){
+  if(_resizeCi<0) return;
+  const delta=e.clientX-_resizeStartX;
+  const newW=Math.max(20, _resizeStartW+delta);
+  colWidths[_resizeCi]=newW;
+  // Update colgroup and th width live — no full re-render needed
+  const col=document.querySelector(`colgroup col[data-ci="${_resizeCi}"]`);
+  const th =document.querySelector(`#thead th[data-ci="${_resizeCi}"]`);
+  if(col){col.style.width=newW+'px';}
+  if(th){th.style.width=newW+'px';th.style.minWidth=newW+'px';}
+}
+function endResize(){
+  document.querySelector(`.col-resize-handle[data-ci="${_resizeCi}"]`)?.classList.remove('dragging');
+  _resizeCi=-1;
+  document.removeEventListener('mousemove',onResize);
+  document.removeEventListener('mouseup',  endResize);
+}
+
+/* ── AUTO-FIT (Excel double-click style) ── */
+function autoFitColumns(){
+  const tbl=document.getElementById('thead').parentElement;
+  if(!tbl||!filt.length) return;
+
+  // Use a hidden measuring canvas
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  ctx.font='700 11.34px "Noto Sans TC", sans-serif'; // ~.71rem bold (header)
+  const bodyFont='400 11.34px "Noto Sans TC", sans-serif'; // ~.81rem body
+
+  const subsidyCols2=ALL_COLS.slice(6,18);
+  const colDefs=[
+    {ci:0,  getValue:(_,i)=>String(i+1)},
+    {ci:1,  getValue:s=>String(s['班級']||'')},
+    {ci:2,  getValue:s=>String(s['座號']||'')},
+    {ci:3,  getValue:s=>String(s['姓名']||'')},
+    {ci:4,  getValue:s=>String(s['性別']||'')},
+    {ci:5,  getValue:s=>String(s['身分證號']||'')},
+    {ci:6,  getValue:s=>String(s['最優補助身分']||'')},
+    ...subsidyCols2.map((col,i)=>({ci:7+i, getValue:s=>String(s[col]||'')})),
+    {ci:19, getValue:s=>String(s['兄弟姊妹']||'')},
+    {ci:20, getValue:s=>s.isMulti?`★${s.multiCount}`:''}
+  ];
+
+  // Header labels
+  const headerLabels=['#','班級','座號','姓名','性別','身分證號','最優補助身分',
+    ...subsidyCols2,'兄弟姊妹','多重'];
+
+  colDefs.forEach(({ci,getValue},idx)=>{
+    // Measure header
+    ctx.font='700 11.34px "Noto Sans TC", sans-serif';
+    let maxW=ctx.measureText(headerLabels[idx]||'').width+18; // +padding
+
+    // Measure all body cells
+    ctx.font=bodyFont;
+    filt.forEach((s,ri)=>{
+      const txt=getValue(s,ri);
+      if(txt) maxW=Math.max(maxW, ctx.measureText(txt).width+14);
+    });
+
+    colWidths[ci]=Math.min(Math.max(Math.ceil(maxW), 24), 400); // clamp 24–400px
+  });
+
+  // Re-render with new widths
+  renderTable();
+}
+
 
 /* ── INLINE EDIT ── */
 window.sEdit=function(td,did,col,cur){
