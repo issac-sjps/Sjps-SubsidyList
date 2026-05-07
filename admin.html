@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理後台 — SJPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f5;--surface:#fff;--surface2:#f7f8fa;--border:#dde2e9;
+  --text:#1a2332;--text2:#5a6a7a;--text3:#9aaabb;
+  --accent:#1a56db;--accent2:#1e429f;--accent-bg:#eff6ff;
+  --green:#057a55;--green-bg:#f0fdf4;--green-bd:#6ee7b7;
+  --red:#c81e1e;--red-bg:#fef2f2;--red-bd:#fca5a5;
+  --yellow:#92400e;--yellow-bg:#fffbeb;--yellow-bd:#fcd34d;
+  --purple:#6d28d9;--purple-bg:#f5f3ff;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* GUARD */
+#guard{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(145deg,#0f172a,#1e3a8a 55%,#1d4ed8);}
+.gcard{background:#fff;border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35);}
+.gcard h2{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+.gcard p{color:var(--text2);font-size:.86rem;margin-bottom:24px;line-height:1.6;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px;
+  border-radius:10px;border:1.5px solid #dadce0;background:#fff;cursor:pointer;
+  font-size:.94rem;font-weight:600;color:#3c4043;font-family:inherit;transition:all .2s;}
+.btn-google:hover{background:#f8f9fa;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+.btn-google svg{width:20px;height:20px;flex-shrink:0;}
+#denied{display:none;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
+.denied-card{background:#fff;border-radius:var(--radius);padding:40px;max-width:400px;text-align:center;box-shadow:var(--shadow);}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);height:56px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.brand{display:flex;align-items:center;gap:10px;}
+.bmark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#6d28d9,#1a56db);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;font-weight:700;}
+.bname{font-size:.95rem;font-weight:700;}
+.bname small{font-size:.7rem;font-weight:400;color:var(--text3);margin-left:4px;}
+.admin-badge{background:linear-gradient(135deg,#6d28d9,#1a56db);color:#fff;
+  font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.3px;}
+.topbar-nav{display:flex;gap:3px;}
+.ntab{padding:7px 14px;border-radius:6px;border:none;background:transparent;cursor:pointer;
+  font-size:.82rem;color:var(--text2);font-family:inherit;transition:all .15s;font-weight:500;}
+.ntab:hover{background:var(--bg);color:var(--text);}
+.ntab.on{background:var(--accent);color:#fff;font-weight:600;}
+.tr{display:flex;align-items:center;gap:8px;}
+.uavatar{width:30px;height:30px;border-radius:50%;background:var(--purple);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;overflow:hidden;}
+.uavatar img{width:100%;height:100%;object-fit:cover;}
+.uname{font-size:.82rem;font-weight:600;}
+.btn-sm{padding:6px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.79rem;color:var(--text2);font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap;}
+.btn-sm:hover{background:var(--surface2);color:var(--text);}
+
+/* PANELS */
+.panel{display:none;padding:20px;max-width:1100px;margin:0 auto;width:100%;}
+.panel.on{display:block;}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+.card-title{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:14px;}
+.card-title .sub{font-weight:400;font-size:.78rem;color:var(--text2);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:800px){.grid-2{grid-template-columns:1fr;}}
+
+/* USER TABLE */
+.utbl{width:100%;border-collapse:collapse;font-size:.84rem;}
+.utbl thead th{padding:9px 12px;background:var(--surface2);border-bottom:2px solid var(--border);
+  text-align:left;font-weight:700;color:var(--text2);font-size:.75rem;letter-spacing:.2px;}
+.utbl tbody td{padding:10px 12px;border-bottom:1px solid var(--border);}
+.utbl tbody tr:hover td{background:#f8fafc;}
+.utbl tbody tr:last-child td{border:none;}
+.uname-cell .n{font-weight:600;}
+.uname-cell .e{font-size:.76rem;color:var(--text3);margin-top:2px;}
+.ag{display:flex;gap:5px;flex-wrap:wrap;}
+.btn-act{padding:5px 10px;border-radius:5px;cursor:pointer;font-size:.77rem;font-family:inherit;border:none;transition:all .15s;}
+.btn-ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.btn-ok-a{background:var(--accent-bg);color:var(--accent);border:1px solid #bfdbfe;font-weight:600;}
+.btn-deny{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.btn-rename{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-role{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-rm{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.rpill{font-size:.71rem;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block;}
+.rp-admin{background:#dbeafe;color:var(--accent2);}
+.rp-user{background:var(--green-bg);color:var(--green);}
+.rp-pending{background:var(--purple-bg);color:var(--purple);}
+.rp-denied{background:var(--red-bg);color:var(--red);}
+
+/* PENDING BANNER */
+.pbanner{background:linear-gradient(90deg,var(--yellow-bg),#fff);border:1px solid var(--yellow-bd);
+  border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.pbanner-txt{font-size:.86rem;color:var(--yellow);font-weight:600;}
+.pbanner-sub{font-size:.78rem;color:var(--text2);margin-top:2px;}
+
+/* LOG ENTRIES */
+.log-item{border:1px solid var(--border);border-radius:9px;margin-bottom:9px;overflow:hidden;}
+.log-head{padding:11px 16px;background:var(--surface2);display:flex;align-items:center;
+  justify-content:space-between;cursor:pointer;transition:background .15s;user-select:none;}
+.log-head:hover{background:#eef2f7;}
+.log-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.log-time{font-weight:700;font-size:.85rem;}
+.log-by{font-size:.79rem;color:var(--text2);}
+.log-type{font-size:.71rem;padding:2px 8px;border-radius:4px;font-weight:700;}
+.lt-login{background:#dbeafe;color:var(--accent2);}
+.lt-edit{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-bd);}
+.lt-import{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.lt-promote{background:var(--purple-bg);color:var(--purple);}
+.log-toggle{font-size:.74rem;color:var(--text3);}
+.log-body{display:none;padding:12px 16px;border-top:1px solid var(--border);font-size:.81rem;color:var(--text2);line-height:1.6;}
+.log-body.open{display:block;}
+.log-detail-item{padding:3px 0;border-bottom:1px solid var(--border);}
+.log-detail-item:last-child{border:none;}
+
+/* MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.46);z-index:500;
+  align-items:center;justify-content:center;}
+.ov.open{display:flex;}
+.modal{background:#fff;border-radius:14px;padding:26px;width:350px;box-shadow:var(--shadow-lg);}
+.mttl{font-size:.95rem;font-weight:700;margin-bottom:5px;}
+.mdesc{font-size:.79rem;color:var(--text2);margin-bottom:12px;line-height:1.5;}
+.modal input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:inherit;font-size:.9rem;outline:none;transition:border-color .15s;margin-bottom:10px;}
+.modal input:focus{border-color:var(--accent);}
+.mbtns{display:flex;gap:6px;justify-content:flex-end;}
+.btn-p{padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;}
+.btn-p:hover{background:var(--accent2);}
+
+/* MISC */
+.lbar{text-align:center;padding:28px;color:var(--text2);font-size:.86rem;}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:.85rem;}
+.log-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.lf-btn{padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.77rem;color:var(--text2);font-family:inherit;transition:all .15s;}
+.lf-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- GUARD -->
+<div id="guard">
+  <div class="gcard">
+    <div style="font-size:2.5rem;margin-bottom:12px">🔐</div>
+    <h2>管理後台</h2>
+    <p>請使用管理員帳號登入<br>一般使用者無法進入此頁面</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 帳號登入
+    </button>
+    <p id="gstatus" style="font-size:.76rem;color:var(--text3);margin-top:12px"></p>
+  </div>
+</div>
+
+<!-- DENIED -->
+<div id="denied">
+  <div class="denied-card">
+    <div style="font-size:2.8rem;margin-bottom:14px">🚫</div>
+    <h2 style="margin-bottom:8px">存取被拒絕</h2>
+    <p style="color:var(--text2);font-size:.86rem;line-height:1.6;margin-bottom:18px">您的帳號沒有管理員權限，請聯繫教務組。</p>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <a href="index.html" class="btn-sm">← 回查詢頁面</a>
+      <button class="btn-sm" id="btn-denied-so">登出</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="bmark">⚙</div>
+      <div class="bname">管理後台<small>SJPS</small></div>
+      <span class="admin-badge">ADMIN</span>
+    </div>
+    <nav class="topbar-nav">
+      <button class="ntab on" data-p="p-users">👥 使用者管理</button>
+      <button class="ntab" data-p="p-logs">📋 操作紀錄</button>
+    </nav>
+    <div class="tr">
+      <a class="btn-sm" href="index.html">← 查詢主頁</a>
+      <div class="uavatar" id="uavatar"></div>
+      <div class="uname" id="uname">—</div>
+      <button class="btn-sm" id="btn-so">登出</button>
+    </div>
+  </header>
+
+  <!-- ═══ USERS ═══ -->
+  <div class="panel on" id="p-users">
+    <div id="pbanner" style="display:none" class="pbanner">
+      <div>
+        <div class="pbanner-txt">⏳ 有 <span id="pcnt">0</span> 位使用者等待審核</div>
+        <div class="pbanner-sub">請於下方「待審核」區域處理</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⏳ 待審核使用者</div>
+        <div id="pending-list"><div class="lbar"><span class="spin"></span>載入中...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">👥 全部使用者</div>
+        <div id="all-users"><div class="lbar"><span class="spin"></span>載入中...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOGS ═══ -->
+  <div class="panel" id="p-logs">
+    <div class="card">
+      <div class="card-title">📋 操作紀錄 <span class="sub">— 登入、匯入、編輯、升學年</span></div>
+      <div class="log-filter">
+        <button class="lf-btn on" data-f="all">全部</button>
+        <button class="lf-btn" data-f="login">登入</button>
+        <button class="lf-btn" data-f="import">匯入</button>
+        <button class="lf-btn" data-f="edit">編輯</button>
+        <button class="lf-btn" data-f="promote">升學年</button>
+      </div>
+      <div id="logs-load" class="lbar"><span class="spin"></span>載入中...</div>
+      <div id="logs-list"></div>
+      <div id="logs-empty" class="empty" style="display:none">目前無紀錄</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 改名 -->
+<div class="ov" id="rename-ov">
+  <div class="modal">
+    <div class="mttl">✏️ 設定顯示名稱</div>
+    <div class="mdesc">設定方便辨識的名稱（如「王老師」、「教務組長」）</div>
+    <input type="text" id="rename-inp" placeholder="輸入顯示名稱">
+    <div class="mbtns">
+      <button class="btn-sm" onclick="cov('rename-ov')">取消</button>
+      <button class="btn-p" id="btn-rename-ok">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+         collection, getDocs, query, orderBy, serverTimestamp, limit }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+const FB  = initializeApp({
+  apiKey:"AIzaSyDEDZVF5IDPEKsCWJxO-PMH873TbIHoE-A",
+  authDomain:"sjps-subsidylist.firebaseapp.com",
+  projectId:"sjps-subsidylist",
+  storageBucket:"sjps-subsidylist.firebasestorage.app",
+  messagingSenderId:"572948992410",
+  appId:"1:572948992410:web:7810606424cbd01115ea23"
+});
+const auth=getAuth(FB),db=getFirestore(FB);
+const ADMIN_EMAILS=["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escA(s){return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
+
+let cUser=null,cDoc=null;
+let renameUid=null;
+let logFilter='all';
+let allLogs=[];
+
+/* ── AUTH ── */
+document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
+document.getElementById('btn-denied-so').onclick=()=>signOut(auth);
+document.getElementById('btn-so').onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){showG('guard');return;}
+  cUser=user;
+  document.getElementById('gstatus').textContent='驗證中...';
+  const uRef=doc(db,'users',user.uid);
+  let snap=await getDoc(uRef);
+  if(!snap.exists()){
+    const allU=await getDocs(collection(db,'users'));
+    const isAdm=ADMIN_EMAILS.includes(user.email)||allU.empty;
+    await setDoc(uRef,{email:user.email,displayName:user.displayName||'',customName:'',
+      photoURL:user.photoURL||'',role:isAdm?'admin':'pending',status:isAdm?'active':'pending',
+      createdAt:serverTimestamp(),approvedAt:isAdm?serverTimestamp():null});
+    snap=await getDoc(uRef);
+  } else if(ADMIN_EMAILS.includes(user.email)&&snap.data().role!=='admin'){
+    await updateDoc(uRef,{role:'admin',status:'active',approvedAt:serverTimestamp()});
+    snap=await getDoc(uRef);
+  }
+  cDoc=snap.data();
+  if(cDoc.role!=='admin'){showG('denied');return;}
+  initAdmin();
+});
+
+function showG(s){
+  document.getElementById('guard').style.display=s==='guard'?'flex':'none';
+  document.getElementById('denied').style.display=s==='denied'?'flex':'none';
+  document.getElementById('app').style.display=s==='app'?'flex':'none';
+  if(s==='app')document.getElementById('app').style.flexDirection='column';
+}
+
+/* ── INIT ── */
+function initAdmin(){
+  showG('app');
+  const name=cDoc.customName||cUser.displayName||cUser.email;
+  const av=document.getElementById('uavatar');
+  av.innerHTML=cUser.photoURL?`<img src="${esc(cUser.photoURL)}" alt="">`:esc(name.charAt(0).toUpperCase());
+  document.getElementById('uname').textContent=name;
+
+  document.querySelectorAll('.ntab').forEach(b=>{
+    b.onclick=()=>{
+      document.querySelectorAll('.ntab').forEach(x=>x.classList.remove('on'));
+      document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      document.getElementById(b.dataset.p).classList.add('on');
+      if(b.dataset.p==='p-logs')loadLogs();
+    };
+  });
+
+  // Log filter
+  document.querySelectorAll('.lf-btn').forEach(b=>{
+    b.onclick=()=>{
+      logFilter=b.dataset.f;
+      document.querySelectorAll('.lf-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      renderLogs();
+    };
+  });
+
+  // Rename modal
+  document.getElementById('btn-rename-ok').onclick=doRename;
+  document.getElementById('rename-inp').onkeydown=e=>{if(e.key==='Enter')doRename();};
+  document.getElementById('rename-ov').onclick=e=>{if(e.target===e.currentTarget)cov('rename-ov');};
+
+  loadUsers();
+}
+
+/* ── USERS ── */
+async function loadUsers(){
+  const snap=await getDocs(collection(db,'users'));
+  const all=snap.docs;
+  const pending=all.filter(d=>d.data().status==='pending');
+
+  // Pending banner
+  if(pending.length){
+    document.getElementById('pcnt').textContent=pending.length;
+    document.getElementById('pbanner').style.display='flex';
+  } else document.getElementById('pbanner').style.display='none';
+
+  // Pending list
+  if(!pending.length){
+    document.getElementById('pending-list').innerHTML='<div class="empty">🎉 無待審核使用者</div>';
+  } else {
+    let h='<table class="utbl"><thead><tr><th>帳號資訊</th><th>申請時間</th><th>操作</th></tr></thead><tbody>';
+    pending.forEach(d=>{
+      const u=d.data();
+      const ts=u.createdAt?.toDate?u.createdAt.toDate().toLocaleString('zh-TW'):'—';
+      h+=`<tr>
+        <td class="uname-cell"><div class="n">${esc(u.displayName||'（未設定）')}</div><div class="e">${esc(u.email)}</div></td>
+        <td style="font-size:.78rem;color:var(--text2)">${esc(ts)}</td>
+        <td><div class="ag">
+          <button class="btn-act btn-ok" onclick="approveUser('${d.id}','user')">✅ 核准（一般）</button>
+          <button class="btn-act btn-ok-a" onclick="approveUser('${d.id}','admin')">✅ 核准（管理員）</button>
+          <button class="btn-act btn-deny" onclick="denyUser('${d.id}')">❌ 拒絕</button>
+        </div></td>
+      </tr>`;
+    });
+    h+='</tbody></table>';
+    document.getElementById('pending-list').innerHTML=h;
+  }
+
+  // All users
+  let h='<table class="utbl"><thead><tr><th>顯示名稱</th><th>Google 帳號</th><th>角色</th><th>核准時間</th><th>操作</th></tr></thead><tbody>';
+  all.sort((a,b)=>{
+    const ra=a.data().role==='admin'?0:a.data().status==='pending'?1:2;
+    const rb=b.data().role==='admin'?0:b.data().status==='pending'?1:2;
+    return ra-rb;
+  }).forEach(d=>{
+    const u=d.data();
+    const name=u.customName||u.displayName||'（未設定）';
+    const ts=u.approvedAt?.toDate?u.approvedAt.toDate().toLocaleString('zh-TW'):'—';
+    const roleClass=u.role==='admin'?'rp-admin':u.status==='pending'?'rp-pending':u.status==='denied'?'rp-denied':'rp-user';
+    const roleLabel=u.role==='admin'?'管理員':u.status==='pending'?'待審核':u.status==='denied'?'已拒絕':'一般使用者';
+    const isSelf=d.id===cUser.uid;
+    h+=`<tr>
+      <td class="uname-cell"><div class="n">${esc(name)}</div></td>
+      <td><div class="e" style="font-size:.8rem">${esc(u.email)}</div></td>
+      <td><span class="rpill ${roleClass}">${esc(roleLabel)}</span></td>
+      <td style="font-size:.76rem;color:var(--text3)">${esc(ts)}</td>
+      <td><div class="ag">
+        <button class="btn-act btn-rename" onclick="openRename('${d.id}','${escA(name)}')">✏️ 改名</button>
+        ${u.role!=='admin'
+          ?`<button class="btn-act btn-role" onclick="setRole('${d.id}','admin')">↑ 升管理員</button>`
+          :`<button class="btn-act btn-role" onclick="setRole('${d.id}','user')" ${isSelf?'disabled title="不能降低自己的權限"':''}>↓ 降一般</button>`}
+        ${!isSelf?`<button class="btn-act btn-rm" onclick="removeUser('${d.id}')">🗑</button>`:''}
+      </div></td>
+    </tr>`;
+  });
+  h+='</tbody></table>';
+  document.getElementById('all-users').innerHTML=h;
+}
+
+window.approveUser=async(uid,role)=>{
+  await updateDoc(doc(db,'users',uid),{role,status:'active',approvedAt:serverTimestamp()});
+  loadUsers();
+};
+window.denyUser=async uid=>{
+  if(!confirm('確定拒絕此使用者？'))return;
+  await updateDoc(doc(db,'users',uid),{status:'denied'});
+  loadUsers();
+};
+window.setRole=async(uid,role)=>{
+  await updateDoc(doc(db,'users',uid),{role,status:'active'});
+  loadUsers();
+};
+window.removeUser=async uid=>{
+  if(!confirm('確定移除此使用者？他將無法再登入。'))return;
+  await deleteDoc(doc(db,'users',uid));
+  loadUsers();
+};
+window.openRename=(uid,cur)=>{
+  renameUid=uid;
+  document.getElementById('rename-inp').value=cur.startsWith('（')?'':cur;
+  document.getElementById('rename-ov').classList.add('open');
+  setTimeout(()=>document.getElementById('rename-inp').focus(),50);
+};
+async function doRename(){
+  if(!renameUid)return;
+  const name=document.getElementById('rename-inp').value.trim();
+  if(!name){alert('請輸入名稱');return;}
+  await updateDoc(doc(db,'users',renameUid),{customName:name});
+  if(renameUid===cUser.uid){document.getElementById('uname').textContent=name;cDoc.customName=name;}
+  cov('rename-ov');loadUsers();
+}
+window.cov=id=>document.getElementById(id).classList.remove('open');
+
+/* ── LOGS ── */
+async function loadLogs(){
+  document.getElementById('logs-load').style.display='block';
+  document.getElementById('logs-list').innerHTML='';
+  document.getElementById('logs-empty').style.display='none';
+  try{
+    // Load from all 3 log collections
+    const [loginSnap,importSnap,editSnap]=await Promise.all([
+      getDocs(query(collection(db,'loginLogs'),orderBy('timestamp','desc'),limit(200))),
+      getDocs(query(collection(db,'importLogs'),orderBy('timestamp','desc'),limit(100))),
+      getDocs(query(collection(db,'editLogs'),orderBy('timestamp','desc'),limit(100)))
+    ]);
+    allLogs=[
+      ...loginSnap.docs.map(d=>({...d.data(),_type:'login',_id:d.id})),
+      ...importSnap.docs.map(d=>({...d.data(),_type:'import',_id:d.id})),
+      ...editSnap.docs.map(d=>({...d.data(),_type:d.data().type==='promote'?'promote':'edit',_id:d.id}))
+    ];
+    allLogs.sort((a,b)=>{
+      const ta=a.timestamp?.toMillis?a.timestamp.toMillis():0;
+      const tb=b.timestamp?.toMillis?b.timestamp.toMillis():0;
+      return tb-ta;
+    });
+    document.getElementById('logs-load').style.display='none';
+    renderLogs();
+  }catch(e){
+    document.getElementById('logs-load').innerHTML=`<span style="color:var(--red)">❌ ${esc(e.message)}</span>`;
+  }
+}
+
+function renderLogs(){
+  const filtered=logFilter==='all'?allLogs:allLogs.filter(l=>l._type===logFilter);
+  const listEl=document.getElementById('logs-list');
+  const emptyEl=document.getElementById('logs-empty');
+  if(!filtered.length){listEl.innerHTML='';emptyEl.style.display='block';return;}
+  emptyEl.style.display='none';
+
+  listEl.innerHTML=filtered.map((l,i)=>{
+    const ts=l.timestamp?.toDate?l.timestamp.toDate().toLocaleString('zh-TW'):'—';
+    const who=l.name||l.importerName||l.editorName||l.email||'未知';
+    const typeLabel={login:'登入',import:'匯入',edit:'編輯',promote:'升學年'}[l._type]||l._type;
+    const typeClass={login:'lt-login',import:'lt-import',edit:'lt-edit',promote:'lt-promote'}[l._type]||'';
+
+    let summary='';
+    if(l._type==='login') summary=`帳號：${esc(l.email||'—')}`;
+    else if(l._type==='import') summary=`學期：${esc(tLabel(l.term))}，新增${l.addedCount||0} 刪除${l.removedCount||0} 修改${l.modifiedCount||0}，共${l.totalCount||0}筆`;
+    else if(l._type==='edit') summary=`學期：${esc(tLabel(l.term))}，共修改 ${(l.changes||[]).length} 筆學生`;
+    else if(l._type==='promote') summary=esc(l.summary||'—');
+
+    let detail='';
+    if(l._type==='edit'&&l.changes?.length){
+      detail=l.changes.map(c=>`<div class="log-detail-item">
+        <strong>${esc(c.cls)} ${esc(String(c.seat))}號 ${esc(c.name)}</strong>：
+        ${(c.fields||[]).map(f=>`${esc(f.field)} 「${esc(String(f.from??''))}」→「<strong>${esc(String(f.to??''))}</strong>」`).join('；')}
+      </div>`).join('');
+    } else if(l._type==='import'&&l.diffs){
+      const d=l.diffs;
+      const items=[
+        ...(d.added||[]).map(s=>`<div class="log-detail-item"><span style="color:var(--green)">新增</span> ${esc(s.cls)} ${esc(String(s.seat))}號 ${esc(s.name)}</div>`),
+        ...(d.removed||[]).map(s=>`<div class="log-detail-item"><span style="color:var(--red)">刪除</span> ${esc(s.cls)} ${esc(String(s.seat))}號 ${esc(s.name)}</div>`),
+        ...(d.modified||[]).map(m=>`<div class="log-detail-item"><span style="color:var(--yellow)">修改</span> ${esc(m.cls)} ${esc(String(m.seat))}號 ${esc(m.name)}</div>`)
+      ];
+      detail=items.join('')||'<div style="color:var(--text3)">無變更細節</div>';
+    }
+
+    return `<div class="log-item">
+      <div class="log-head" onclick="toggleLog(${i})">
+        <div class="log-meta">
+          <span class="log-time">📅 ${esc(ts)}</span>
+          <span class="log-type ${typeClass}">${typeLabel}</span>
+          <span class="log-by">${esc(who)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.78rem;color:var(--text2)">${esc(summary)}</span>
+          ${detail?`<span class="log-toggle" id="ltog${i}">▼</span>`:''}
+        </div>
+      </div>
+      ${detail?`<div class="log-body" id="lbody${i}">${detail}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+window.toggleLog=function(i){
+  const body=document.getElementById('lbody'+i);
+  const tog=document.getElementById('ltog'+i);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(tog)tog.textContent=open?'▲':'▼';
+};
+</script>
+</body>
+</html>

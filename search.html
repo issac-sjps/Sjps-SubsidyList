@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學生查詢 — SJPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f5;--surface:#fff;--surface2:#f7f8fa;--border:#dde2e9;
+  --text:#1a2332;--text2:#5a6a7a;--text3:#9aaabb;
+  --accent:#1a56db;--accent2:#1e429f;--accent-bg:#eff6ff;
+  --green:#057a55;--green-bg:#f0fdf4;--green-bd:#6ee7b7;
+  --red:#c81e1e;--red-bg:#fef2f2;--red-bd:#fca5a5;
+  --yellow:#92400e;--yellow-bg:#fffbeb;--yellow-bd:#fcd34d;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* AUTH / PENDING (same mini pattern) */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(145deg,#0f172a,#1e3a8a 55%,#1d4ed8);}
+.auth-card{background:#fff;border-radius:20px;padding:48px 40px;width:380px;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.35);}
+.auth-card h1{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+.auth-card p{color:var(--text2);font-size:.86rem;margin-bottom:26px;line-height:1.6;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
+  padding:13px;border-radius:10px;border:1.5px solid #dadce0;background:#fff;cursor:pointer;
+  font-size:.94rem;font-weight:600;color:#3c4043;font-family:inherit;transition:all .2s;}
+.btn-google:hover{background:#f8f9fa;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+.btn-google svg{width:20px;height:20px;flex-shrink:0;}
+#pending-screen{display:none;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
+.pcard{background:#fff;border-radius:var(--radius);padding:36px;max-width:400px;text-align:center;box-shadow:var(--shadow);}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);height:54px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.brand{display:flex;align-items:center;gap:10px;}
+.bmark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#1a56db,#6d28d9);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:700;}
+.bname{font-size:.95rem;font-weight:700;}
+.bname small{font-size:.7rem;font-weight:400;color:var(--text3);margin-left:4px;}
+.tr{display:flex;align-items:center;gap:7px;}
+.uavatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;overflow:hidden;}
+.uavatar img{width:100%;height:100%;object-fit:cover;}
+.btn-sm{padding:6px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.79rem;color:var(--text2);font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;transition:all .15s;}
+.btn-sm:hover{background:var(--surface2);color:var(--text);}
+
+/* MAIN */
+.page{padding:24px;max-width:900px;margin:0 auto;width:100%;}
+
+/* SEARCH BOX */
+.search-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;}
+.search-title{font-size:1.1rem;font-weight:700;margin-bottom:4px;}
+.search-sub{font-size:.82rem;color:var(--text2);margin-bottom:18px;line-height:1.5;}
+.search-row{display:flex;gap:8px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:200px;padding:11px 15px;border:1.5px solid var(--border);border-radius:9px;
+  font-family:inherit;font-size:.95rem;color:var(--text);outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--accent);}
+.btn-search{padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:9px;
+  cursor:pointer;font-size:.88rem;font-weight:700;font-family:inherit;transition:background .15s;white-space:nowrap;}
+.btn-search:hover{background:var(--accent2);}
+.search-hint{margin-top:10px;font-size:.77rem;color:var(--text3);line-height:1.6;}
+.search-hint span{background:var(--surface2);border:1px solid var(--border);border-radius:4px;
+  padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:.78rem;margin:0 2px;}
+
+/* RESULTS */
+.result-section{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.result-header{padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;}
+.result-title{font-weight:700;font-size:.9rem;}
+.result-count{font-size:.78rem;color:var(--text2);}
+
+/* STUDENT CARD */
+.student-card{border-bottom:1px solid var(--border);overflow:hidden;}
+.student-card:last-child{border:none;}
+.sc-header{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;transition:background .15s;}
+.sc-header:hover{background:#f8fafc;}
+.sc-name{font-weight:700;font-size:1rem;}
+.sc-meta{font-size:.79rem;color:var(--text2);margin-top:2px;}
+.sc-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.badge{padding:3px 9px;border-radius:20px;font-size:.73rem;font-weight:700;}
+.badge-opt{background:var(--accent-bg);color:var(--accent);}
+.badge-multi{background:#fef9c3;color:#854d0e;}
+.badge-term{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.badge-gone{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.sc-arrow{font-size:.78rem;color:var(--text3);flex-shrink:0;transition:transform .2s;}
+.sc-arrow.open{transform:rotate(180deg);}
+
+.sc-body{display:none;background:#fafbfc;border-top:1px solid var(--border);}
+.sc-body.open{display:block;}
+
+/* History timeline */
+.history-wrap{padding:14px 20px;}
+.hist-title{font-size:.78rem;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;}
+.term-block{margin-bottom:14px;}
+.term-block:last-child{margin:0;}
+.term-label-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.term-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.term-dot.archived{background:var(--text3);}
+.term-name{font-weight:700;font-size:.84rem;color:var(--text);}
+.term-pill{font-size:.7rem;padding:2px 7px;border-radius:10px;font-weight:600;}
+.tp-current{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.tp-past{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+
+/* Detail grid */
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;
+  padding:10px;background:#fff;border-radius:8px;border:1px solid var(--border);}
+.dgrid-item{padding:6px 8px;}
+.dgrid-key{font-size:.68rem;font-weight:700;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;}
+.dgrid-val{font-size:.83rem;color:var(--text);font-weight:500;}
+.dgrid-val.highlight{color:var(--accent);font-weight:700;}
+.dgrid-val.empty{color:var(--text3);font-style:italic;}
+
+/* Subsidy pills */
+.subsidy-pills{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;
+  background:#fff;border-radius:8px;border:1px solid var(--border);margin-top:6px;}
+.sub-pill{padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600;
+  background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+
+/* Change log between terms */
+.change-log{margin-top:8px;padding:8px 10px;background:var(--yellow-bg);
+  border-radius:8px;border:1px solid var(--yellow-bd);}
+.change-log-title{font-size:.72rem;font-weight:700;color:var(--yellow);margin-bottom:5px;}
+.change-item{font-size:.77rem;color:var(--text2);padding:2px 0;}
+.change-item strong{color:var(--text);}
+
+/* State */
+.lbar{text-align:center;padding:32px;color:var(--text2);font-size:.87rem;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty-state{text-align:center;padding:40px;}
+.empty-state .eicon{font-size:2.5rem;margin-bottom:10px;}
+.empty-state p{color:var(--text2);font-size:.87rem;}
+.empty-state .hint{font-size:.78rem;color:var(--text3);margin-top:6px;}
+.not-found{text-align:center;padding:40px;}
+.nf-icon{font-size:2.5rem;margin-bottom:10px;}
+.nf-name{font-size:1.1rem;font-weight:700;margin-bottom:6px;}
+.nf-sub{font-size:.83rem;color:var(--text2);line-height:1.6;}
+.nf-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600;
+  background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);margin-top:10px;}
+
+@media(max-width:600px){
+  .page{padding:12px;}
+  .detail-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div style="font-size:2.5rem;margin-bottom:12px">🔍</div>
+    <h1>學生補助查詢</h1>
+    <p>請先登入才能查詢學生補助資料</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div id="pending-screen">
+  <div class="pcard">
+    <div style="font-size:2.5rem;margin-bottom:12px">⏳</div>
+    <h2 style="margin-bottom:8px">等待管理員核准</h2>
+    <p style="color:var(--text2);font-size:.86rem">核准後即可查詢學生資料</p>
+    <button class="btn-sm" id="btn-sp" style="margin-top:16px">登出</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="bmark">補</div>
+      <div class="bname">學生查詢<small>SJPS</small></div>
+    </div>
+    <div class="tr">
+      <a class="btn-sm" href="index.html">← 名單查閱</a>
+      <a class="btn-sm" href="compare.html">📊 比較</a>
+      <div class="uavatar" id="uavatar"></div>
+      <button class="btn-sm" id="btn-so">登出</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Search Box -->
+    <div class="search-card">
+      <div class="search-title">🔍 查詢學生補助資格</div>
+      <div class="search-sub">
+        輸入學生姓名或班級座號，即可查詢該學生在所有學期的補助紀錄。<br>
+        若學生曾有補助資格但已不在名單，也會顯示歷史紀錄。
+      </div>
+      <div class="search-row">
+        <input class="search-input" id="q" type="text" placeholder="輸入姓名（如：王小明）或班級座號（如：10105）" autocomplete="off">
+        <button class="btn-search" id="btn-q">查詢</button>
+      </div>
+      <div class="search-hint">
+        格式範例：姓名<span>王小明</span>，班級座號<span>10105</span>（年級+班+座號，共5位數），或部分姓名<span>王</span>
+      </div>
+    </div>
+
+    <!-- Initial state -->
+    <div class="empty-state" id="state-init">
+      <div class="eicon">🔍</div>
+      <p>輸入姓名或班級座號開始查詢</p>
+      <div class="hint">系統會自動搜尋所有學期的補助紀錄</div>
+    </div>
+
+    <!-- Loading -->
+    <div class="lbar" id="state-load" style="display:none">
+      <span class="spin"></span>查詢中，請稍候...
+    </div>
+
+    <!-- Results -->
+    <div id="results" style="display:none"></div>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc,
+         collection, getDocs, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+const FB  = initializeApp({
+  apiKey:"AIzaSyDEDZVF5IDPEKsCWJxO-PMH873TbIHoE-A",
+  authDomain:"sjps-subsidylist.firebaseapp.com",
+  projectId:"sjps-subsidylist",
+  storageBucket:"sjps-subsidylist.firebasestorage.app",
+  messagingSenderId:"572948992410",
+  appId:"1:572948992410:web:7810606424cbd01115ea23"
+});
+const auth=getAuth(FB), db=getFirestore(FB);
+
+const ADMIN_EMAILS=["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
+const SUBSIDY_COLS=[
+  '1.低收(社)','2.中低收(社)','3.單親(社)','4.身障(學)(社)',
+  '5.身障(家)(社)','6.身障(學)','7.身障(家)','8.重身障(學)',
+  '9.原民生','10.原民清寒(原)','11.功勳','12.導師認定'
+];
+const DISPLAY_COLS=['班級','座號','性別','身分證號','最優補助身分','兄弟姊妹'];
+
+function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+let cUser=null,cDoc=null;
+let allTerms=[];          // sorted term ids
+let termData={};          // { termId: [ students ] }
+
+/* ── AUTH ── */
+document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
+document.getElementById('btn-sp').onclick=()=>signOut(auth);
+document.getElementById('btn-so').onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){show('auth');return;}
+  cUser=user;
+  const uRef=doc(db,'users',user.uid);
+  let snap=await getDoc(uRef);
+  if(!snap.exists()){
+    const allU=await getDocs(collection(db,'users'));
+    const isAdm=ADMIN_EMAILS.includes(user.email)||allU.empty;
+    await setDoc(uRef,{email:user.email,displayName:user.displayName||'',customName:'',
+      photoURL:user.photoURL||'',role:isAdm?'admin':'pending',status:isAdm?'active':'pending',
+      createdAt:serverTimestamp(),approvedAt:isAdm?serverTimestamp():null});
+    snap=await getDoc(uRef);
+  } else if(ADMIN_EMAILS.includes(user.email)&&snap.data().role!=='admin'){
+    await updateDoc(uRef,{role:'admin',status:'active',approvedAt:serverTimestamp()});
+    snap=await getDoc(uRef);
+  }
+  cDoc=snap.data();
+  if(cDoc.status!=='active'){show('pending');return;}
+  initApp();
+});
+
+function show(s){
+  document.getElementById('auth-screen').style.display=s==='auth'?'flex':'none';
+  document.getElementById('pending-screen').style.display=s==='pending'?'flex':'none';
+  document.getElementById('app').style.display=s==='app'?'flex':'none';
+  if(s==='app')document.getElementById('app').style.flexDirection='column';
+}
+
+/* ── INIT ── */
+async function initApp(){
+  show('app');
+  const name=cDoc.customName||cUser.displayName||cUser.email;
+  const av=document.getElementById('uavatar');
+  av.innerHTML=cUser.photoURL?`<img src="${esc(cUser.photoURL)}" alt="">`:esc(name.charAt(0).toUpperCase());
+
+  // Load all terms metadata
+  const tSnap=await getDocs(collection(db,'termsMeta'));
+  allTerms=tSnap.docs.map(d=>d.id).sort();
+
+  // Load all terms' student data in parallel
+  await Promise.all(allTerms.map(async t=>{
+    const snap=await getDocs(collection(db,`terms/${t}/students`));
+    termData[t]=snap.docs.map(d=>d.data());
+  }));
+
+  // Search on Enter
+  const qi=document.getElementById('q');
+  qi.onkeydown=e=>{if(e.key==='Enter')doSearch();};
+  document.getElementById('btn-q').onclick=doSearch;
+
+  // Auto-search if query param present
+  const qp=new URLSearchParams(location.search).get('q');
+  if(qp){qi.value=qp;doSearch();}
+}
+
+/* ── SEARCH ── */
+function doSearch(){
+  const raw=document.getElementById('q').value.trim();
+  if(!raw)return;
+  history.replaceState(null,'',`?q=${encodeURIComponent(raw)}`);
+
+  document.getElementById('state-init').style.display='none';
+  document.getElementById('state-load').style.display='block';
+  document.getElementById('results').style.display='none';
+
+  // Determine search mode
+  const isBJZ=raw.match(/^\d{5}$/); // 5-digit = 年級+班+座號 like 10105
+
+  setTimeout(()=>{  // small tick so loading shows
+    const matches=findStudents(raw,isBJZ);
+    renderResults(raw,matches,!!isBJZ);
+    document.getElementById('state-load').style.display='none';
+    document.getElementById('results').style.display='block';
+  },60);
+}
+
+/* ── FIND ── */
+function findStudents(q,isBJZ){
+  // Build unique student keys across all terms
+  // Key: name + gender + id_number (most stable identifiers)
+  // Return: [ { key, name, appearances: [ { term, student } ] } ]
+
+  const studentMap={}; // key → { name, appearances }
+
+  allTerms.forEach(term=>{
+    const students=termData[term]||[];
+    students.forEach(s=>{
+      const name=String(s['姓名']||'').trim();
+      const cls=String(s['班級']||'').trim();
+      const seat=String(s['座號']||'').trim();
+      const idno=String(s['身分證號']||'').trim();
+
+      // Build 5-digit code for this student: e.g. cls="101" seat="05" → "10105"
+      const bjzCode=cls.length>=3&&seat ? cls.padEnd(3,'0')+seat.padStart(2,'0') : '';
+
+      let match=false;
+      if(isBJZ){
+        match = bjzCode===q;
+      } else {
+        // Name search: partial match
+        match = name.includes(q);
+      }
+      if(!match)return;
+
+      // Unique key: prefer idno, fallback to name+birth
+      const key=idno||`${name}_${s['性別']||''}`;
+      if(!studentMap[key]){studentMap[key]={key,name,appearances:[]};}
+      studentMap[key].appearances.push({term,student:s});
+    });
+  });
+
+  // Sort appearances by term desc for each student
+  Object.values(studentMap).forEach(st=>{
+    st.appearances.sort((a,b)=>b.term.localeCompare(a.term));
+  });
+
+  return Object.values(studentMap).sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
+}
+
+/* ── RENDER ── */
+function renderResults(q,matches,isBJZ){
+  const resEl=document.getElementById('results');
+
+  if(!matches.length){
+    resEl.innerHTML=`
+      <div class="result-section">
+        <div class="not-found">
+          <div class="nf-icon">😔</div>
+          <div class="nf-name">找不到「${esc(q)}」</div>
+          <div class="nf-sub">目前所有學期的補助名單中均未找到符合的學生。<br>
+          ${isBJZ?'請確認班級座號格式（5位數，如：10105）。':'請確認姓名是否正確。'}</div>
+          <div class="nf-badge">不在補助名單內</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Latest term for "current" label
+  const latestTerm=allTerms[allTerms.length-1]||'';
+
+  let html=`<div class="result-section">
+    <div class="result-header">
+      <span class="result-title">查詢結果：「${esc(q)}」</span>
+      <span class="result-count">找到 ${matches.length} 位學生</span>
+    </div>`;
+
+  matches.forEach((st,idx)=>{
+    const latest=st.appearances[0]; // most recent appearance
+    const s=latest.student;
+    const isCurrentTerm=latest.term===latestTerm;
+    const optType=esc(s['最優補助身分']||'未填寫');
+    const subs=SUBSIDY_COLS.filter(c=>String(s[c]||'').trim()!=='');
+    const multiLabel=s.isMulti?`<span class="badge badge-multi">多重(${s.multiCount}項)</span>`:'';
+    const termBadge=isCurrentTerm
+      ?`<span class="badge badge-term" style="background:var(--green-bg);color:var(--green);border-color:var(--green-bd)">📌 ${esc(tLabel(latest.term))}</span>`
+      :`<span class="badge badge-gone">⚠ 最後見於 ${esc(tLabel(latest.term))}</span>`;
+
+    html+=`
+    <div class="student-card" id="sc${idx}">
+      <div class="sc-header" onclick="toggleCard(${idx})">
+        <div>
+          <div class="sc-name">${esc(st.name)}</div>
+          <div class="sc-meta">${esc(s['班級']||'—')} 班 &nbsp;${esc(s['座號']||'—')} 號 &nbsp;|&nbsp; ${esc(s['性別']||'—')}</div>
+        </div>
+        <div class="sc-badges">
+          <span class="badge badge-opt">${optType}</span>
+          ${multiLabel}
+          ${termBadge}
+          <span class="sc-arrow" id="arr${idx}">▼</span>
+        </div>
+      </div>
+      <div class="sc-body" id="body${idx}">
+        ${renderStudentDetail(st,latestTerm)}
+      </div>
+    </div>`;
+  });
+
+  html+='</div>';
+  resEl.innerHTML=html;
+}
+
+function renderStudentDetail(st,latestTerm){
+  const terms=allTerms.slice().reverse(); // newest first
+  let html='<div class="history-wrap">';
+  html+=`<div class="hist-title">📋 補助歷史紀錄（共 ${st.appearances.length} 個學期）</div>`;
+
+  // For detecting changes between terms
+  const appByTerm={};
+  st.appearances.forEach(a=>{ appByTerm[a.term]=a.student; });
+
+  const appearedTerms=st.appearances.map(a=>a.term);
+
+  appearedTerms.forEach((term,ti)=>{
+    const s=appByTerm[term];
+    const isCurrent=term===latestTerm;
+    const isFirst=ti===0;
+    const subs=SUBSIDY_COLS.filter(c=>String(s[c]||'').trim()!=='');
+
+    // Detect changes from previous (older) term
+    let changeLog='';
+    if(ti<appearedTerms.length-1){
+      const prevTerm=appearedTerms[ti+1];
+      const prev=appByTerm[prevTerm];
+      const changedFields=[...SUBSIDY_COLS,'最優補助身分','班級','座號'].filter(f=>
+        String(s[f]||'')!==String(prev[f]||'')
+      );
+      if(changedFields.length){
+        changeLog=`<div class="change-log">
+          <div class="change-log-title">⚡ 相較於 ${esc(tLabel(prevTerm))} 的異動</div>
+          ${changedFields.map(f=>`<div class="change-item">
+            <strong>${esc(f)}</strong>：「${esc(String(prev[f]||''))}」→「${esc(String(s[f]||''))}」
+          </div>`).join('')}
+        </div>`;
+      }
+    }
+
+    html+=`
+    <div class="term-block">
+      <div class="term-label-row">
+        <div class="term-dot ${isCurrent?'':'archived'}"></div>
+        <span class="term-name">${esc(tLabel(term))}</span>
+        <span class="term-pill ${isCurrent?'tp-current':'tp-past'}">${isCurrent?'目前學期':'封存'}</span>
+      </div>
+      <div class="detail-grid">
+        ${DISPLAY_COLS.map(c=>`
+          <div class="dgrid-item">
+            <div class="dgrid-key">${esc(c)}</div>
+            <div class="dgrid-val ${c==='最優補助身分'?'highlight':''}${!String(s[c]||'').trim()?' empty':''}">${esc(String(s[c]||''))||'—'}</div>
+          </div>`).join('')}
+      </div>
+      ${subs.length?`<div class="subsidy-pills" style="margin-top:6px">
+        ${subs.map(c=>`<span class="sub-pill">✓ ${esc(c)}</span>`).join('')}
+      </div>`:''}
+      ${changeLog}
+    </div>`;
+  });
+
+  // Check if student is NOT in latest term (i.e. left the list)
+  if(!appByTerm[latestTerm]){
+    html+=`<div style="padding:12px;background:var(--red-bg);border-radius:8px;border:1px solid var(--red-bd);font-size:.82rem;color:var(--red);margin-top:8px">
+      ⚠️ 該學生在最新學期（${esc(tLabel(latestTerm))}）<strong>不在補助名單內</strong>
+    </div>`;
+  }
+
+  html+='</div>';
+  return html;
+}
+
+window.toggleCard=function(idx){
+  const body=document.getElementById('body'+idx);
+  const arr=document.getElementById('arr'+idx);
+  const open=body.classList.toggle('open');
+  arr.classList.toggle('open',open);
+};
+</script>
+</body>
+</html>

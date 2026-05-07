@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學期比較 — SJPS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f5;--surface:#fff;--surface2:#f7f8fa;--border:#dde2e9;
+  --text:#1a2332;--text2:#5a6a7a;--text3:#9aaabb;
+  --accent:#1a56db;--accent2:#1e429f;--accent-bg:#eff6ff;
+  --green:#057a55;--green-bg:#f0fdf4;--green-bd:#6ee7b7;
+  --red:#c81e1e;--red-bg:#fef2f2;--red-bd:#fca5a5;
+  --yellow:#92400e;--yellow-bg:#fffbeb;--yellow-bd:#fcd34d;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(145deg,#0f172a,#1e3a8a 55%,#1d4ed8);}
+.auth-card{background:#fff;border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35);}
+.auth-card h1{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+.auth-card p{color:var(--text2);font-size:.86rem;margin-bottom:26px;line-height:1.6;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px;
+  border-radius:10px;border:1.5px solid #dadce0;background:#fff;cursor:pointer;
+  font-size:.94rem;font-weight:600;color:#3c4043;font-family:inherit;transition:all .2s;}
+.btn-google:hover{background:#f8f9fa;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+.btn-google svg{width:20px;height:20px;flex-shrink:0;}
+#pending-screen{display:none;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
+.pcard{background:#fff;border-radius:var(--radius);padding:36px;max-width:400px;text-align:center;box-shadow:var(--shadow);}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);height:54px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.brand{display:flex;align-items:center;gap:10px;}
+.bmark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#1a56db,#6d28d9);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:700;}
+.bname{font-size:.95rem;font-weight:700;}
+.bname small{font-size:.7rem;font-weight:400;color:var(--text3);margin-left:4px;}
+.tr{display:flex;align-items:center;gap:7px;}
+.uavatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;overflow:hidden;}
+.uavatar img{width:100%;height:100%;object-fit:cover;}
+.btn-sm{padding:6px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.79rem;color:var(--text2);font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;transition:all .15s;}
+.btn-sm:hover{background:var(--surface2);color:var(--text);}
+
+/* PAGE */
+.page{padding:20px;max-width:1200px;margin:0 auto;width:100%;}
+
+/* SELECTOR CARD */
+.sel-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:20px;}
+.sel-title{font-size:.9rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.sel-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.sel-group{display:flex;flex-direction:column;gap:5px;}
+.sel-label{font-size:.74rem;font-weight:700;color:var(--text2);}
+.sel-select{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;
+  font-size:.87rem;font-weight:600;background:#fff;cursor:pointer;outline:none;min-width:120px;}
+.sel-select:focus{border-color:var(--accent);}
+.sel-arrow{font-size:1.5rem;color:var(--text3);margin-top:14px;}
+.btn-compare{padding:9px 22px;background:var(--accent);color:#fff;border:none;border-radius:8px;
+  cursor:pointer;font-size:.87rem;font-weight:700;font-family:inherit;transition:background .15s;margin-top:14px;}
+.btn-compare:hover{background:var(--accent2);}
+.btn-compare:disabled{background:#9ca3af;cursor:not-allowed;}
+
+/* SUMMARY STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-box{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;}
+.stat-num{font-size:1.8rem;font-weight:700;line-height:1;}
+.stat-label{font-size:.78rem;color:var(--text2);margin-top:4px;}
+.stat-added .stat-num{color:var(--green);}
+.stat-removed .stat-num{color:var(--red);}
+.stat-changed .stat-num{color:#d97706;}
+.stat-same .stat-num{color:var(--text3);}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:4px;margin-bottom:16px;}
+.tab{flex:1;padding:9px;border:none;background:transparent;border-radius:7px;cursor:pointer;
+  font-size:.83rem;font-family:inherit;color:var(--text2);font-weight:500;transition:all .15s;}
+.tab.on{background:var(--accent);color:#fff;font-weight:700;}
+.tab-count{display:inline-block;padding:1px 7px;border-radius:20px;font-size:.72rem;margin-left:5px;
+  background:rgba(255,255,255,.25);}
+.tab:not(.on) .tab-count{background:var(--surface2);color:var(--text2);}
+
+/* COMPARE TABLE */
+.compare-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.tbl-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.tbl-header-title{font-weight:700;font-size:.88rem;}
+.btn-export-sm{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;
+  background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;
+  font-size:.78rem;font-weight:600;font-family:inherit;}
+.btn-export-sm:hover{background:var(--accent2);}
+
+.tbl-wrap{overflow-x:auto;max-height:520px;}
+table{border-collapse:collapse;width:max-content;min-width:100%;font-size:.81rem;}
+thead th{background:#f4f7fb;padding:9px 12px;text-align:left;
+  border-bottom:2px solid var(--border);border-right:1px solid var(--border);
+  white-space:nowrap;font-weight:700;color:var(--text2);font-size:.74rem;position:sticky;top:0;z-index:5;}
+tbody td{padding:8px 12px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f5f7fa;white-space:nowrap;}
+tbody tr:hover td{background:#f8fafc;}
+.tseq{text-align:center;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text3);}
+.row-added td{background:#f0fdf4 !important;}
+.row-added td:first-child{border-left:3px solid var(--green);}
+.row-removed td{background:#fef2f2 !important;}
+.row-removed td:first-child{border-left:3px solid var(--red);}
+.row-changed td{background:#fffbeb !important;}
+.row-changed td:first-child{border-left:3px solid #f59e0b;}
+.cell-changed{color:#92400e;font-weight:700;}
+.cell-prev{color:var(--text3);font-size:.72rem;display:block;text-decoration:line-through;}
+
+/* CHANGE DETAIL */
+.change-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700;}
+.cb-add{background:#dcfce7;color:#15803d;}
+.cb-rem{background:#fee2e2;color:#b91c1c;}
+.cb-chg{background:#fef9c3;color:#854d0e;}
+
+/* STATE */
+.lbar{text-align:center;padding:36px;color:var(--text2);font-size:.87rem;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:.87rem;}
+
+@media(max-width:768px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .page{padding:12px;}
+  .sel-row{flex-direction:column;align-items:flex-start;}
+  .sel-arrow{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div style="font-size:2.5rem;margin-bottom:12px">📊</div>
+    <h1>學期比較</h1>
+    <p>請先登入才能查看學期比較</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div id="pending-screen">
+  <div class="pcard">
+    <div style="font-size:2.5rem;margin-bottom:12px">⏳</div>
+    <h2 style="margin-bottom:8px">等待管理員核准</h2>
+    <p style="color:var(--text2);font-size:.86rem">核准後即可使用比較功能</p>
+    <button class="btn-sm" id="btn-sp" style="margin-top:16px">登出</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="bmark">補</div>
+      <div class="bname">學期比較<small>SJPS</small></div>
+    </div>
+    <div class="tr">
+      <a class="btn-sm" href="index.html">← 名單查閱</a>
+      <a class="btn-sm" href="search.html">🔍 查詢學生</a>
+      <div class="uavatar" id="uavatar"></div>
+      <button class="btn-sm" id="btn-so">登出</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Selector -->
+    <div class="sel-card">
+      <div class="sel-title">📊 選擇要比較的兩個學期</div>
+      <div class="sel-row">
+        <div class="sel-group">
+          <span class="sel-label">舊學期（基準）</span>
+          <select class="sel-select" id="sel-a"></select>
+        </div>
+        <span class="sel-arrow">→</span>
+        <div class="sel-group">
+          <span class="sel-label">新學期（比較）</span>
+          <select class="sel-select" id="sel-b"></select>
+        </div>
+        <button class="btn-compare" id="btn-compare">🔍 開始比較</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="lbar" id="cmp-load" style="display:none"><span class="spin"></span>比較中...</div>
+
+    <!-- Results -->
+    <div id="cmp-result" style="display:none">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-box stat-added">
+          <div class="stat-num" id="s-added">0</div>
+          <div class="stat-label">🟢 新加入名單</div>
+        </div>
+        <div class="stat-box stat-removed">
+          <div class="stat-num" id="s-removed">0</div>
+          <div class="stat-label">🔴 移出名單</div>
+        </div>
+        <div class="stat-box stat-changed">
+          <div class="stat-num" id="s-changed">0</div>
+          <div class="stat-label">🟡 資料有變動</div>
+        </div>
+        <div class="stat-box stat-same">
+          <div class="stat-num" id="s-same">0</div>
+          <div class="stat-label">⚪ 無變動</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab on" data-t="added" id="tab-added">🟢 新加入 <span class="tab-count" id="tc-added">0</span></button>
+        <button class="tab" data-t="removed" id="tab-removed">🔴 移出 <span class="tab-count" id="tc-removed">0</span></button>
+        <button class="tab" data-t="changed" id="tab-changed">🟡 資料變動 <span class="tab-count" id="tc-changed">0</span></button>
+        <button class="tab" data-t="same" id="tab-same">⚪ 無變動 <span class="tab-count" id="tc-same">0</span></button>
+      </div>
+
+      <!-- Table -->
+      <div class="compare-card">
+        <div class="tbl-header">
+          <div class="tbl-header-title" id="tbl-title">比較結果</div>
+          <button class="btn-export-sm" id="btn-exp-cmp">⬇ 匯出此頁 Excel</button>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead id="cmp-thead"></thead><tbody id="cmp-tbody"></tbody></table>
+        </div>
+        <div class="empty" id="cmp-empty" style="display:none">此分類無資料</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc,
+         collection, getDocs, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+const FB  = initializeApp({
+  apiKey:"AIzaSyDEDZVF5IDPEKsCWJxO-PMH873TbIHoE-A",
+  authDomain:"sjps-subsidylist.firebaseapp.com",
+  projectId:"sjps-subsidylist",
+  storageBucket:"sjps-subsidylist.firebasestorage.app",
+  messagingSenderId:"572948992410",
+  appId:"1:572948992410:web:7810606424cbd01115ea23"
+});
+const auth=getAuth(FB),db=getFirestore(FB);
+const ADMIN_EMAILS=["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
+
+const ALL_COLS=['班級','座號','姓名','性別','身分證號','最優補助身分',
+  '1.低收(社)','2.中低收(社)','3.單親(社)','4.身障(學)(社)',
+  '5.身障(家)(社)','6.身障(學)','7.身障(家)','8.重身障(學)',
+  '9.原民生','10.原民清寒(原)','11.功勳','12.導師認定','兄弟姊妹'];
+
+function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function today(){return new Date().toISOString().slice(0,10).replace(/-/g,'');}
+
+let cUser=null,cDoc=null;
+let allTerms=[],termDataA={},termDataB={};
+let cmpData={added:[],removed:[],changed:[],same:[]};
+let activeTab='added';
+let termA='',termB='';
+
+/* ── AUTH ── */
+document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
+document.getElementById('btn-sp').onclick=()=>signOut(auth);
+document.getElementById('btn-so').onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){show('auth');return;}
+  cUser=user;
+  const uRef=doc(db,'users',user.uid);
+  let snap=await getDoc(uRef);
+  if(!snap.exists()){
+    const allU=await getDocs(collection(db,'users'));
+    const isAdm=ADMIN_EMAILS.includes(user.email)||allU.empty;
+    await setDoc(uRef,{email:user.email,displayName:user.displayName||'',customName:'',
+      photoURL:user.photoURL||'',role:isAdm?'admin':'pending',status:isAdm?'active':'pending',
+      createdAt:serverTimestamp(),approvedAt:isAdm?serverTimestamp():null});
+    snap=await getDoc(uRef);
+  } else if(ADMIN_EMAILS.includes(user.email)&&snap.data().role!=='admin'){
+    await updateDoc(uRef,{role:'admin',status:'active',approvedAt:serverTimestamp()});
+    snap=await getDoc(uRef);
+  }
+  cDoc=snap.data();
+  if(cDoc.status!=='active'){show('pending');return;}
+  initApp();
+});
+
+function show(s){
+  document.getElementById('auth-screen').style.display=s==='auth'?'flex':'none';
+  document.getElementById('pending-screen').style.display=s==='pending'?'flex':'none';
+  document.getElementById('app').style.display=s==='app'?'flex':'none';
+  if(s==='app')document.getElementById('app').style.flexDirection='column';
+}
+
+/* ── INIT ── */
+async function initApp(){
+  show('app');
+  const name=cDoc.customName||cUser.displayName||cUser.email;
+  const av=document.getElementById('uavatar');
+  av.innerHTML=cUser.photoURL?`<img src="${esc(cUser.photoURL)}" alt="">`:esc(name.charAt(0).toUpperCase());
+
+  const snap=await getDocs(collection(db,'termsMeta'));
+  allTerms=snap.docs.map(d=>d.id).sort();
+
+  if(allTerms.length<2){
+    document.querySelector('.sel-card').innerHTML='<div class="empty">需要至少兩個學期的資料才能進行比較。</div>';
+    return;
+  }
+
+  const selA=document.getElementById('sel-a');
+  const selB=document.getElementById('sel-b');
+  selA.innerHTML=allTerms.map(t=>`<option value="${t}">${tLabel(t)}</option>`).join('');
+  selB.innerHTML=allTerms.map(t=>`<option value="${t}">${tLabel(t)}</option>`).join('');
+  // Default: A=oldest, B=latest
+  selA.value=allTerms[0];
+  selB.value=allTerms[allTerms.length-1];
+
+  document.getElementById('btn-compare').onclick=doCompare;
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.onclick=()=>{ activeTab=b.dataset.t; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderTable(); };
+  });
+
+  document.getElementById('btn-exp-cmp').onclick=exportCurrent;
+}
+
+/* ── COMPARE ── */
+async function doCompare(){
+  termA=document.getElementById('sel-a').value;
+  termB=document.getElementById('sel-b').value;
+  if(termA===termB){alert('請選擇不同的兩個學期');return;}
+  if(termA>termB){[termA,termB]=[termB,termA];document.getElementById('sel-a').value=termA;document.getElementById('sel-b').value=termB;}
+
+  document.getElementById('cmp-load').style.display='block';
+  document.getElementById('cmp-result').style.display='none';
+
+  // Load both terms
+  const [snapA,snapB]=await Promise.all([
+    getDocs(collection(db,`terms/${termA}/students`)),
+    getDocs(collection(db,`terms/${termB}/students`))
+  ]);
+  const studA=snapA.docs.map(d=>d.data());
+  const studB=snapB.docs.map(d=>d.data());
+
+  // Build maps by stable key (身分證號 preferred, fallback name+gender)
+  const keyFn=s=>{const id=String(s['身分證號']||'').trim();return id||`${s['姓名']||''}_${s['性別']||''}`;};
+  const mapA={},mapB={};
+  studA.forEach(s=>{mapA[keyFn(s)]=s;});
+  studB.forEach(s=>{mapB[keyFn(s)]=s;});
+
+  const added=[],removed=[],changed=[],same=[];
+  const allKeys=new Set([...Object.keys(mapA),...Object.keys(mapB)]);
+
+  allKeys.forEach(k=>{
+    const a=mapA[k],b=mapB[k];
+    if(!a&&b){added.push({key:k,b});}
+    else if(a&&!b){removed.push({key:k,a});}
+    else if(a&&b){
+      const changedCols=ALL_COLS.filter(c=>String(a[c]||'')!==String(b[c]||''));
+      if(changedCols.length){changed.push({key:k,a,b,changedCols});}
+      else same.push({key:k,a,b});
+    }
+  });
+
+  // Sort each list by 班級→座號 (using B data if available, A otherwise)
+  const sortFn=(x)=>{
+    const s=x.b||x.a;
+    return [String(s['班級']||''),Number(s['座號']||0)];
+  };
+  [added,removed,changed,same].forEach(arr=>arr.sort((x,y)=>{
+    const [ca,na]=sortFn(x),[cb,nb]=sortFn(y);
+    if(ca!==cb)return ca.localeCompare(cb,'zh-TW');
+    return na-nb;
+  }));
+
+  cmpData={added,removed,changed,same};
+
+  // Update stats
+  document.getElementById('s-added').textContent=added.length;
+  document.getElementById('s-removed').textContent=removed.length;
+  document.getElementById('s-changed').textContent=changed.length;
+  document.getElementById('s-same').textContent=same.length;
+  document.getElementById('tc-added').textContent=added.length;
+  document.getElementById('tc-removed').textContent=removed.length;
+  document.getElementById('tc-changed').textContent=changed.length;
+  document.getElementById('tc-same').textContent=same.length;
+
+  activeTab='added';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-added').classList.add('on');
+
+  document.getElementById('cmp-load').style.display='none';
+  document.getElementById('cmp-result').style.display='block';
+  renderTable();
+}
+
+/* ── RENDER TABLE ── */
+function renderTable(){
+  const data=cmpData[activeTab]||[];
+  const empty=document.getElementById('cmp-empty');
+  const thead=document.getElementById('cmp-thead');
+  const tbody=document.getElementById('cmp-tbody');
+  const tblTitle=document.getElementById('tbl-title');
+
+  const labels={added:`🟢 新加入名單（${tLabel(termA)} 沒有 → ${tLabel(termB)} 出現）`,
+    removed:`🔴 移出名單（${tLabel(termA)} 有 → ${tLabel(termB)} 不見）`,
+    changed:`🟡 資料有變動（${tLabel(termA)} → ${tLabel(termB)}）`,
+    same:`⚪ 無變動（兩學期資料相同）`};
+  tblTitle.textContent=labels[activeTab];
+
+  if(!data.length){
+    empty.style.display='block';
+    thead.innerHTML='';tbody.innerHTML='';
+    return;
+  }
+  empty.style.display='none';
+
+  if(activeTab==='added'||activeTab==='removed'||activeTab==='same'){
+    // Simple table
+    thead.innerHTML=`<tr><th>#</th>${ALL_COLS.map(c=>`<th>${esc(c)}</th>`).join('')}<th>多重</th></tr>`;
+    tbody.innerHTML=data.map((item,i)=>{
+      const s=item.b||item.a;
+      const rowCls=activeTab==='added'?'row-added':activeTab==='removed'?'row-removed':'';
+      const multi=s.isMulti?`<span style="background:#f59e0b;color:#fff;font-size:.68rem;padding:1px 5px;border-radius:3px;font-weight:700">★${s.multiCount}</span>`:'';
+      const cells=ALL_COLS.map((c,ci)=>`<td class="${ci===5?'topt':''}">${esc(String(s[c]??''))}</td>`).join('');
+      return `<tr class="${rowCls}"><td class="tseq">${i+1}</td>${cells}<td>${multi}</td></tr>`;
+    }).join('');
+
+  } else {
+    // Changed table — show both old and new values
+    thead.innerHTML=`<tr><th>#</th><th>班級</th><th>座號</th><th>姓名</th><th>異動欄位</th></tr>`;
+    tbody.innerHTML=data.map((item,i)=>{
+      const {a,b,changedCols}=item;
+      const changes=changedCols.map(c=>
+        `<div style="margin-bottom:4px">
+          <span style="font-weight:700;font-size:.78rem">${esc(c)}</span>：
+          <span class="cell-prev">${esc(String(a[c]??''))||'（空白）'}</span>
+          <span class="cell-changed">→ ${esc(String(b[c]??''))||'（空白）'}</span>
+        </div>`
+      ).join('');
+      return `<tr class="row-changed">
+        <td class="tseq">${i+1}</td>
+        <td>${esc(b['班級']||a['班級']||'—')}</td>
+        <td>${esc(String(b['座號']||a['座號']||'—'))}</td>
+        <td style="font-weight:600">${esc(b['姓名']||a['姓名']||'—')}</td>
+        <td style="white-space:normal;min-width:280px">${changes}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+/* ── EXPORT ── */
+function exportCurrent(){
+  const data=cmpData[activeTab]||[];
+  if(!data.length){alert('無資料可匯出');return;}
+  const tabNames={added:'新加入',removed:'移出',changed:'資料變動',same:'無變動'};
+  let rows;
+  if(activeTab==='changed'){
+    rows=data.map((item,i)=>{
+      const{a,b,changedCols}=item;
+      const r={序號:i+1,'班級（新）':b['班級']||a['班級'],'座號（新）':b['座號']||a['座號'],'姓名':b['姓名']||a['姓名']};
+      changedCols.forEach(c=>{r[`${c}（舊）`]=a[c]??'';r[`${c}（新）`]=b[c]??'';});
+      return r;
+    });
+  } else {
+    rows=data.map((item,i)=>{
+      const s=item.b||item.a;
+      const r={序號:i+1};
+      ALL_COLS.forEach(c=>r[c]=s[c]??'');
+      r['多重標記']=s.isMulti?`多重(${s.multiCount}項)`:'';
+      return r;
+    });
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const title=`${tLabel(termA)}vs${tLabel(termB)}_${tabNames[activeTab]}`;
+  XLSX.utils.book_append_sheet(wb,ws,title.substring(0,31));
+  XLSX.writeFile(wb,`學期比較_${title}_${today()}.xlsx`);
+}
+
+function topt(c){return c==='最優補助身分'?'topt':'';}
+</script>
+</body>
+</html>
