@@ -154,6 +154,80 @@ tbody tr.mr:hover td{background:#fef3c7;}
   font-family:inherit;font-size:.81rem;background:transparent;color:var(--text);}
 .cc{background:#fef9c3 !important;}
 
+/* GENDER ROW COLORS */
+tbody tr.row-m td { background:#f0f7ff; }
+tbody tr.row-m:hover td { background:#e0eefe; }
+tbody tr.row-m.mr td { background:#fdf6e3; }
+tbody tr.row-m.mr:hover td { background:#faefc8; }
+tbody tr.row-f td { background:#fdf2f8; }
+tbody tr.row-f:hover td { background:#fce4f3; }
+tbody tr.row-f.mr td { background:#fdf0e8; }
+tbody tr.row-f.mr:hover td { background:#fae3d5; }
+
+/* GENDER CHIP */
+.chip.sx.on { background:#f3e8ff; border-color:#c084fc; color:#7e22ce; font-weight:700; }
+
+/* COUNT BADGE on chip */
+.chip .cnt { 
+  display:inline-block; background:rgba(0,0,0,.1); border-radius:20px;
+  padding:0 5px; font-size:.68rem; margin-left:3px; font-weight:700; line-height:1.5;
+}
+.chip.on .cnt { background:rgba(255,255,255,.35); }
+
+/* COMPACT TABLE - subsidy columns */
+/* Fixed columns: #, 班級, 座號, 姓名, 性別 → always shown, normal width */
+/* 身分證號 → narrow, hover to see full */
+/* 最優補助身分 → normal */
+/* Subsidy cols → compact: empty=hidden text, value overflows into next empty cell */
+.tbl-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border);
+  max-height:calc(100vh - 310px); min-height:200px; }
+table { border-collapse:collapse; width:100%; font-size:.81rem; table-layout:fixed; }
+/* Column widths */
+table colgroup col.c-seq  { width:38px; }
+table colgroup col.c-cls  { width:52px; }
+table colgroup col.c-seat { width:46px; }
+table colgroup col.c-name { width:72px; }
+table colgroup col.c-sex  { width:36px; }
+table colgroup col.c-idno { width:60px; }
+table colgroup col.c-opt  { width:110px; }
+table colgroup col.c-sub  { width:56px; }
+table colgroup col.c-sib  { width:70px; }
+table colgroup col.c-multi{ width:52px; }
+
+thead th { background:#f4f7fb; padding:8px 7px; text-align:left;
+  border-bottom:2px solid var(--border); border-right:1px solid #e8edf3;
+  white-space:nowrap; font-weight:700; color:var(--text2); font-size:.71rem;
+  position:sticky; top:0; z-index:10; overflow:hidden; }
+thead th:first-child { text-align:center; }
+
+tbody td { padding:7px 7px; border-bottom:1px solid #f0f3f8;
+  border-right:1px solid #f5f7fa; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+
+/* Subsidy cell: empty gets min space, non-empty can expand */
+td.sub-cell { 
+  max-width:56px; font-size:.76rem; color:var(--green);
+  font-weight:600; overflow:visible; position:relative; z-index:1;
+  background:inherit;
+}
+td.sub-cell.has-val {
+  overflow:visible; white-space:nowrap;
+}
+td.sub-cell.no-val { 
+  color:transparent; font-size:.1px; padding-left:2px; padding-right:2px;
+}
+/* ID number: truncate, full on hover */
+td.idno-cell { 
+  font-size:.74rem; color:var(--text3); 
+  font-family:'JetBrains Mono',monospace; cursor:help;
+  max-width:60px; overflow:hidden; text-overflow:ellipsis;
+}
+td.idno-cell:hover { 
+  overflow:visible; position:relative; z-index:2;
+  background:var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.12);
+  border-radius:4px; padding:7px; white-space:nowrap; color:var(--text);
+}
+
 /* IMPORT */
 .uzone{border:2px dashed var(--border);border-radius:var(--radius);
   padding:30px 20px;text-align:center;cursor:pointer;background:var(--surface2);
@@ -286,7 +360,12 @@ tbody tr.mr:hover td{background:#fef3c7;}
     <div class="card">
       <div class="card-title">🔍 篩選條件</div>
       <div class="fbar"><span class="ftag">📚 年級</span><div class="chips" id="gc"></div></div>
-      <div class="fbar" style="margin:0"><span class="ftag">🏷️ 類別</span><div class="chips" id="cc"></div></div>
+      <div class="fbar"><span class="ftag">🏷️ 類別</span><div class="chips" id="cc"></div></div>
+      <div class="fbar" style="margin:0"><span class="ftag">👤 性別</span><div class="chips" id="sc">
+        <button class="chip sx on" data-v="all">全部性別</button>
+        <button class="chip sx" data-v="男">🔵 男</button>
+        <button class="chip sx" data-v="女">🔴 女</button>
+      </div></div>
     </div>
     <div class="card">
       <div class="toolbar">
@@ -441,7 +520,7 @@ function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,''); 
 let cUser=null, cDoc=null;
 let term=DEFAULT_TERM;
 let all=[], filt=[];
-let cGrade='all', sCats=new Set();
+let cGrade='all', sCats=new Set(), cSex='all';
 let editOn=false, edits={};   // edits: { docId: { col: newVal } }
 let pendingImp=null;
 
@@ -539,6 +618,8 @@ async function loadTerms(){
     if(editOn&&Object.keys(edits).length&&!confirm('切換學期將放棄未儲存的編輯，繼續？')){sel.value=term;return;}
     exitEdit(false);
     term=sel.value;
+    cGrade='all'; sCats.clear(); cSex='all';
+    document.querySelectorAll('.chip.sx').forEach(b=>b.classList.toggle('on',b.dataset.v==='all'));
     document.getElementById('term-badge').textContent=tLabel(term);
     document.getElementById('imp-term').textContent=tLabel(term);
     await loadData();
@@ -563,23 +644,83 @@ async function loadData(){
 }
 
 /* ── FILTERS ── */
+function countFor(grade, cat, sex) {
+  return all.filter(s =>
+    (grade === 'all' || s.grade === grade) &&
+    (cat   === 'all' || s.optimalType === cat) &&
+    (sex   === 'all' || (s['性別']||'') === sex)
+  ).length;
+}
+
 function buildFilters(){
-  const grades=[...new Set(all.map(s=>s.grade))].sort();
-  const cats=[...new Set(all.map(s=>s.optimalType))].sort();
-  let g=`<button class="chip g on" data-v="all">全部</button>`;
-  grades.forEach(x=>{g+=`<button class="chip g" data-v="${esc(x)}">${esc(x)}</button>`;});
-  document.getElementById('gc').innerHTML=g;
-  let c=`<button class="chip c on" data-v="all">全部類別</button>`;
-  cats.forEach(x=>{c+=`<button class="chip c" data-v="${esc(x)}">${esc(x)}</button>`;});
-  document.getElementById('cc').innerHTML=c;
-  document.querySelectorAll('.chip.g').forEach(b=>{
-    b.onclick=()=>{cGrade=b.dataset.v;document.querySelectorAll('.chip.g').forEach(x=>x.classList.remove('on'));b.classList.add('on');renderTable();};
+  const grades = [...new Set(all.map(s=>s.grade))].sort();
+  const cats   = [...new Set(all.map(s=>s.optimalType))].sort();
+
+  // Grade chips with count
+  let g = `<button class="chip g on" data-v="all">全部<span class="cnt">${all.length}</span></button>`;
+  grades.forEach(x=>{
+    const n = all.filter(s=>s.grade===x).length;
+    g += `<button class="chip g" data-v="${esc(x)}">${esc(x)}<span class="cnt">${n}</span></button>`;
   });
+  document.getElementById('gc').innerHTML = g;
+
+  // Category chips with count (based on current grade+sex)
+  buildCatChips(cats);
+
+  // Grade click handler
+  document.querySelectorAll('.chip.g').forEach(b=>{
+    b.onclick=()=>{
+      cGrade=b.dataset.v;
+      document.querySelectorAll('.chip.g').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      // Re-render cat chips with updated counts
+      buildCatChips(cats);
+      renderTable();
+    };
+  });
+
+  // Sex chips
+  document.querySelectorAll('.chip.sx').forEach(b=>{
+    b.onclick=()=>{
+      cSex=b.dataset.v;
+      document.querySelectorAll('.chip.sx').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      buildCatChips(cats);
+      renderTable();
+    };
+  });
+}
+
+function buildCatChips(cats) {
+  const totalForGradeSex = all.filter(s=>
+    (cGrade==='all'||s.grade===cGrade) && (cSex==='all'||(s['性別']||'')===cSex)
+  ).length;
+
+  let c = `<button class="chip c on" data-v="all">全部類別<span class="cnt">${totalForGradeSex}</span></button>`;
+  cats.forEach(x=>{
+    const n = all.filter(s=>
+      (cGrade==='all'||s.grade===cGrade) &&
+      (cSex==='all'||(s['性別']||'')===cSex) &&
+      s.optimalType===x
+    ).length;
+    if(n===0) return; // hide empty categories
+    c += `<button class="chip c${sCats.has(x)?' on':''}" data-v="${esc(x)}">${esc(x)}<span class="cnt">${n}</span></button>`;
+  });
+  document.getElementById('cc').innerHTML = c;
+
   document.querySelectorAll('.chip.c').forEach(b=>{
     b.onclick=()=>{
-      const v=b.dataset.v,ab=document.querySelector('.chip.c[data-v="all"]');
-      if(v==='all'){sCats.clear();document.querySelectorAll('.chip.c').forEach(x=>x.classList.remove('on'));ab.classList.add('on');}
-      else{ab.classList.remove('on');sCats.has(v)?sCats.delete(v)||b.classList.remove('on'):(sCats.add(v),b.classList.add('on'));if(!sCats.size)ab.classList.add('on');}
+      const v=b.dataset.v, ab=document.querySelector('.chip.c[data-v="all"]');
+      if(v==='all'){
+        sCats.clear();
+        document.querySelectorAll('.chip.c').forEach(x=>x.classList.remove('on'));
+        ab.classList.add('on');
+      } else {
+        ab.classList.remove('on');
+        if(sCats.has(v)){sCats.delete(v);b.classList.remove('on');}
+        else{sCats.add(v);b.classList.add('on');}
+        if(!sCats.size) ab.classList.add('on');
+      }
       renderTable();
     };
   });
@@ -587,32 +728,100 @@ function buildFilters(){
 
 /* ── RENDER TABLE ── */
 function renderTable(){
-  filt=all.filter(s=>(cGrade==='all'||s.grade===cGrade)&&(sCats.size===0||sCats.has(s.optimalType)));
+  filt=all.filter(s=>
+    (cGrade==='all'||s.grade===cGrade) &&
+    (sCats.size===0||sCats.has(s.optimalType)) &&
+    (cSex==='all'||(s['性別']||'')===cSex)
+  );
   filt.sort((a,b)=>{
     const ca=String(a['班級']||''),cb=String(b['班級']||'');
     if(ca!==cb)return ca.localeCompare(cb,'zh-TW');
     return Number(a['座號']||0)-Number(b['座號']||0);
   });
-  document.getElementById('rcnt').textContent=filt.length;
-  const empty=document.getElementById('dempty'),tbl=document.getElementById('thead').parentElement;
+
+  // Update count badge (show M/F breakdown)
+  const mCnt = filt.filter(s=>(s['性別']||'')==='男').length;
+  const fCnt = filt.filter(s=>(s['性別']||'')==='女').length;
+  const cntEl = document.getElementById('rcnt');
+  cntEl.innerHTML = `${filt.length}`;
+  const cntBadge = document.getElementById('rcnt').closest('.cnt-badge');
+  if(cntBadge) cntBadge.innerHTML = `結果：<strong>${filt.length}</strong> 人
+    <span style="margin-left:6px;font-size:.74rem;color:#2563eb">🔵男 ${mCnt}</span>
+    <span style="margin-left:4px;font-size:.74rem;color:#db2777">🔴女 ${fCnt}</span>`;
+
+  const empty=document.getElementById('dempty'), tbl=document.getElementById('thead').parentElement;
   if(!filt.length){empty.style.display='block';tbl.style.display='none';return;}
-  empty.style.display='none';tbl.style.display='';
+  empty.style.display='none'; tbl.style.display='';
   document.getElementById('tblwrap').classList[editOn?'add':'remove']('em-on');
-  document.getElementById('thead').innerHTML=
-    `<tr><th>#</th>${ALL_COLS.map(c=>`<th>${esc(c)}</th>`).join('')}<th>多重</th></tr>`;
-  document.getElementById('tbody').innerHTML=filt.map((s,i)=>{
-    const ch=edits[s._docId]||{};
-    const multi=s.isMulti?`<span class="mbadge">★${s.multiCount}</span>`:'';
-    const cells=ALL_COLS.map((c,ci)=>{
-      const raw=ch[c]!==undefined?ch[c]:(s[c]??'');
-      const v=esc(String(raw));
-      const cls=(ci===5?' topt':'')+(ch[c]!==undefined?' cc':'');
-      if(editOn){
-        return `<td class="ec${cls}" data-did="${esc(s._docId)}" data-col="${esc(c)}" onclick="sEdit(this,'${escA(s._docId)}','${escA(c)}',\`${escA(String(raw))}\`)">${v}</td>`;
-      }
-      return `<td class="${cls.trim()}">${v}</td>`;
+
+  // Fixed cols + subsidy cols structure
+  const fixedCols  = ['班級','座號','姓名','性別','身分證號','最優補助身分'];
+  const subsidyCols2 = ALL_COLS.slice(6,18);  // 12 subsidy
+  const sibCol     = ['兄弟姊妹'];
+
+  // Build colgroup for fixed widths
+  const colgroup = `<colgroup>
+    <col class="c-seq">
+    <col class="c-cls"><col class="c-seat"><col class="c-name">
+    <col class="c-sex"><col class="c-idno"><col class="c-opt">
+    ${subsidyCols2.map(()=>'<col class="c-sub">').join('')}
+    <col class="c-sib"><col class="c-multi">
+  </colgroup>`;
+
+  document.getElementById('thead').innerHTML =
+    `${colgroup}<tr>
+      <th>#</th>
+      ${fixedCols.map(c=>`<th>${esc(c)}</th>`).join('')}
+      ${subsidyCols2.map(c=>`<th title="${esc(c)}">${esc(c.replace(/\(.*\)/g,'').trim())}</th>`).join('')}
+      <th>兄弟姊妹</th><th>多重</th>
+    </tr>`;
+
+  document.getElementById('tbody').innerHTML = filt.map((s,i)=>{
+    const ch     = edits[s._docId]||{};
+    const gender = s['性別']||'';
+    const isMulti = s.isMulti;
+    const gClass  = gender==='男' ? 'row-m' : gender==='女' ? 'row-f' : '';
+    const multi   = isMulti ? `<span class="mbadge">★${s.multiCount}</span>` : '';
+
+    const makeCell = (col, extraClass='') => {
+      const raw  = ch[col]!==undefined ? ch[col] : (s[col]??'');
+      const v    = esc(String(raw));
+      const chg  = ch[col]!==undefined ? ' cc' : '';
+      if(editOn) return `<td class="ec${chg} ${extraClass}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
+      return `<td class="${extraClass}${chg}">${v}</td>`;
+    };
+
+    // Fixed cells
+    const seqCell  = `<td class="tseq">${i+1}</td>`;
+    const clsCell  = makeCell('班級');
+    const seatCell = makeCell('座號');
+    const nameCell = makeCell('姓名');
+    const sexCell  = makeCell('性別');
+    // ID: truncate, hover shows full
+    const idRaw    = ch['身分證號']!==undefined ? ch['身分證號'] : (s['身分證號']??'');
+    const idChg    = ch['身分證號']!==undefined ? ' cc' : '';
+    const idCell   = editOn
+      ? `<td class="idno-cell ec${idChg}" onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`
+      : `<td class="idno-cell${idChg}" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
+    const optCell  = makeCell('最優補助身分', 'topt');
+
+    // Subsidy cells — compact: empty cells show nothing, value cells overflow
+    const subCells = subsidyCols2.map(col=>{
+      const raw = ch[col]!==undefined ? ch[col] : (s[col]??'');
+      const hasVal = String(raw).trim() !== '';
+      const v   = hasVal ? esc(String(raw)) : '';
+      const chg = ch[col]!==undefined ? ' cc' : '';
+      const cls = `sub-cell ${hasVal?'has-val':'no-val'}${chg}`;
+      if(editOn) return `<td class="${cls} ec" title="${esc(col)}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
+      return `<td class="${cls}" title="${hasVal?esc(col+': '+String(raw)):''}">${v}</td>`;
     }).join('');
-    return `<tr class="${s.isMulti?'mr':''}"><td class="tseq">${i+1}</td>${cells}<td>${multi}</td></tr>`;
+
+    const sibCell  = makeCell('兄弟姊妹');
+
+    return `<tr class="${gClass}${isMulti?' mr':''}">
+      ${seqCell}${clsCell}${seatCell}${nameCell}${sexCell}${idCell}${optCell}${subCells}${sibCell}
+      <td>${multi}</td>
+    </tr>`;
   }).join('');
 }
 
