@@ -180,16 +180,16 @@ tbody tr.row-f.mr:hover td { background:#fae3d5; }
 table { border-collapse:collapse; width:100%; font-size:.81rem; table-layout:fixed; }
 
 /* ── Column widths (default = collapsed) ── */
-table colgroup col.c-seq  { width:34px; }
-table colgroup col.c-cls  { width:40px; }   /* 班級 */
-table colgroup col.c-seat { width:36px; }   /* 座號 */
-table colgroup col.c-name { width:68px; }
-table colgroup col.c-sex  { width:30px; }   /* 性別 */
-table colgroup col.c-idno { width:58px; }
-table colgroup col.c-opt  { width:auto; min-width:90px; }  /* 最優補助身分 always auto */
-table colgroup col.c-sub  { width:50px; }
-table colgroup col.c-sib  { width:64px; }
-table colgroup col.c-multi{ width:44px; }
+table colgroup col.c-seq  { width:30px; }
+table colgroup col.c-cls  { width:32px; }   /* 班級 */
+table colgroup col.c-seat { width:28px; }   /* 座號 */
+table colgroup col.c-name { width:64px; }
+table colgroup col.c-sex  { width:24px; }   /* 性別 */
+table colgroup col.c-idno { width:54px; }
+table colgroup col.c-opt  { width:auto; min-width:78px; }  /* 最優補助身分 always auto */
+table colgroup col.c-sub  { width:46px; }
+table colgroup col.c-sib  { width:58px; }
+table colgroup col.c-multi{ width:38px; }
 
 /* ── Expanded column ── */
 table colgroup col.c-expanded { width:auto !important; min-width:130px; }
@@ -216,9 +216,11 @@ tbody td.col-expanded-cell {
   overflow:visible; white-space:normal; word-break:break-all;
   background:inherit;
 }
+/* But topt is always nowrap even when expanded */
+tbody td.topt.col-expanded-cell { white-space:nowrap !important; word-break:normal; }
 
-/* 最優補助身分: always full, never clip */
-td.topt { overflow:visible; white-space:nowrap; font-weight:700; color:var(--accent); }
+/* 最優補助身分: always full, never clip, never wrap */
+td.topt { overflow:visible; white-space:nowrap !important; font-weight:700; color:var(--accent); }
 
 /* Subsidy cell: empty gets min space, value cells show content */
 td.sub-cell { 
@@ -378,7 +380,7 @@ td.idno-cell.col-expanded-cell { color:var(--text); }
     </div>
     <div class="card">
       <div class="toolbar">
-        <div class="cnt-badge">結果：<strong id="rcnt">0</strong> 人</div>
+        <div class="cnt-badge" id="cnt-badge-el">結果：<strong id="rcnt">0</strong> 人</div>
         <button class="btn-exp ghost" id="btn-exp-f">⬇ 匯出篩選</button>
         <button class="btn-exp ghost" id="btn-exp-a">⬇ 匯出全部</button>
         <div id="edit-ctrl" style="display:none;align-items:center;gap:6px;margin-left:auto">
@@ -752,11 +754,11 @@ function renderTable(){
     return Number(a['座號']||0)-Number(b['座號']||0);
   });
 
-  // Count badge
+  // Count badge — use the toolbar div directly, not closest() which breaks after re-render
   const mCnt = filt.filter(s=>(s['性別']||'')==='男').length;
   const fCnt = filt.filter(s=>(s['性別']||'')==='女').length;
-  const cntBadge = document.getElementById('rcnt').closest('.cnt-badge');
-  if(cntBadge) cntBadge.innerHTML = `結果：<strong>${filt.length}</strong> 人
+  document.getElementById('cnt-badge-el').innerHTML =
+    `結果：<strong>${filt.length}</strong> 人
     <span style="margin-left:6px;font-size:.74rem;color:#2563eb">🔵男 ${mCnt}</span>
     <span style="margin-left:4px;font-size:.74rem;color:#db2777">🔴女 ${fCnt}</span>`;
 
