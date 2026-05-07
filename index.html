@@ -175,58 +175,67 @@ tbody tr.row-f.mr:hover td { background:#fae3d5; }
 .chip.on .cnt { background:rgba(255,255,255,.35); }
 
 /* COMPACT TABLE - subsidy columns */
-/* Fixed columns: #, 班級, 座號, 姓名, 性別 → always shown, normal width */
-/* 身分證號 → narrow, hover to see full */
-/* 最優補助身分 → normal */
-/* Subsidy cols → compact: empty=hidden text, value overflows into next empty cell */
 .tbl-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border);
   max-height:calc(100vh - 310px); min-height:200px; }
 table { border-collapse:collapse; width:100%; font-size:.81rem; table-layout:fixed; }
-/* Column widths */
-table colgroup col.c-seq  { width:38px; }
-table colgroup col.c-cls  { width:52px; }
-table colgroup col.c-seat { width:46px; }
-table colgroup col.c-name { width:72px; }
-table colgroup col.c-sex  { width:36px; }
-table colgroup col.c-idno { width:60px; }
-table colgroup col.c-opt  { width:110px; }
-table colgroup col.c-sub  { width:56px; }
-table colgroup col.c-sib  { width:70px; }
-table colgroup col.c-multi{ width:52px; }
 
-thead th { background:#f4f7fb; padding:8px 7px; text-align:left;
+/* ── Column widths (default = collapsed) ── */
+table colgroup col.c-seq  { width:34px; }
+table colgroup col.c-cls  { width:40px; }   /* 班級 */
+table colgroup col.c-seat { width:36px; }   /* 座號 */
+table colgroup col.c-name { width:68px; }
+table colgroup col.c-sex  { width:30px; }   /* 性別 */
+table colgroup col.c-idno { width:58px; }
+table colgroup col.c-opt  { width:auto; min-width:90px; }  /* 最優補助身分 always auto */
+table colgroup col.c-sub  { width:50px; }
+table colgroup col.c-sib  { width:64px; }
+table colgroup col.c-multi{ width:44px; }
+
+/* ── Expanded column ── */
+table colgroup col.c-expanded { width:auto !important; min-width:130px; }
+
+thead th { background:#f4f7fb; padding:7px 6px; text-align:left;
   border-bottom:2px solid var(--border); border-right:1px solid #e8edf3;
   white-space:nowrap; font-weight:700; color:var(--text2); font-size:.71rem;
-  position:sticky; top:0; z-index:10; overflow:hidden; }
-thead th:first-child { text-align:center; }
+  position:sticky; top:0; z-index:10; overflow:hidden;
+  cursor:pointer; user-select:none; }
+thead th:first-child { text-align:center; cursor:default; }
+thead th:hover:not(:first-child) { background:#eaf0fb; }
 
-tbody td { padding:7px 7px; border-bottom:1px solid #f0f3f8;
+/* Expand indicator on header */
+thead th.col-expandable::after { content:' ↔'; font-size:.6rem; opacity:.4; }
+thead th.col-expanded::after   { content:' ✕'; font-size:.6rem; opacity:.7; color:var(--accent); }
+thead th.col-expanded { color:var(--accent); background:#e8f0fe; }
+
+tbody td { padding:6px 6px; border-bottom:1px solid #f0f3f8;
   border-right:1px solid #f5f7fa; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
 
-/* Subsidy cell: empty gets min space, non-empty can expand */
+/* Cells in an expanded column — show full content */
+tbody td.col-expanded-cell { 
+  overflow:visible; white-space:normal; word-break:break-all;
+  background:inherit;
+}
+
+/* 最優補助身分: always full, never clip */
+td.topt { overflow:visible; white-space:nowrap; font-weight:700; color:var(--accent); }
+
+/* Subsidy cell: empty gets min space, value cells show content */
 td.sub-cell { 
-  max-width:56px; font-size:.76rem; color:var(--green);
+  font-size:.76rem; color:var(--green);
   font-weight:600; overflow:visible; position:relative; z-index:1;
   background:inherit;
 }
-td.sub-cell.has-val {
-  overflow:visible; white-space:nowrap;
-}
-td.sub-cell.no-val { 
-  color:transparent; font-size:.1px; padding-left:2px; padding-right:2px;
-}
-/* ID number: truncate, full on hover */
+td.sub-cell.has-val { overflow:visible; white-space:nowrap; }
+td.sub-cell.no-val  { color:transparent; font-size:.1px; padding-left:2px; padding-right:2px; }
+
+/* ID number: truncate, full only when column expanded */
 td.idno-cell { 
   font-size:.74rem; color:var(--text3); 
-  font-family:'JetBrains Mono',monospace; cursor:help;
-  max-width:60px; overflow:hidden; text-overflow:ellipsis;
+  font-family:'JetBrains Mono',monospace;
+  overflow:hidden; text-overflow:ellipsis;
 }
-td.idno-cell:hover { 
-  overflow:visible; position:relative; z-index:2;
-  background:var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.12);
-  border-radius:4px; padding:7px; white-space:nowrap; color:var(--text);
-}
+td.idno-cell.col-expanded-cell { color:var(--text); }
 
 /* IMPORT */
 .uzone{border:2px dashed var(--border);border-radius:var(--radius);
@@ -631,6 +640,7 @@ async function loadTerms(){
 async function loadData(){
   document.getElementById('dload').style.display='block';
   document.getElementById('dcont').style.display='none';
+  expandedColIdx=-1;
   try{
     const snap=await getDocs(sCol(term));
     all=snap.docs.map(d=>({_docId:d.id,...d.data()}));
@@ -727,6 +737,9 @@ function buildCatChips(cats) {
 }
 
 /* ── RENDER TABLE ── */
+// Track which column index is currently expanded (-1 = none)
+let expandedColIdx = -1;
+
 function renderTable(){
   filt=all.filter(s=>
     (cGrade==='all'||s.grade===cGrade) &&
@@ -739,11 +752,9 @@ function renderTable(){
     return Number(a['座號']||0)-Number(b['座號']||0);
   });
 
-  // Update count badge (show M/F breakdown)
+  // Count badge
   const mCnt = filt.filter(s=>(s['性別']||'')==='男').length;
   const fCnt = filt.filter(s=>(s['性別']||'')==='女').length;
-  const cntEl = document.getElementById('rcnt');
-  cntEl.innerHTML = `${filt.length}`;
   const cntBadge = document.getElementById('rcnt').closest('.cnt-badge');
   if(cntBadge) cntBadge.innerHTML = `結果：<strong>${filt.length}</strong> 人
     <span style="margin-left:6px;font-size:.74rem;color:#2563eb">🔵男 ${mCnt}</span>
@@ -754,73 +765,111 @@ function renderTable(){
   empty.style.display='none'; tbl.style.display='';
   document.getElementById('tblwrap').classList[editOn?'add':'remove']('em-on');
 
-  // Fixed cols + subsidy cols structure
-  const fixedCols  = ['班級','座號','姓名','性別','身分證號','最優補助身分'];
-  const subsidyCols2 = ALL_COLS.slice(6,18);  // 12 subsidy
-  const sibCol     = ['兄弟姊妹'];
+  const subsidyCols2 = ALL_COLS.slice(6,18);
 
-  // Build colgroup for fixed widths
+  // Column index map (0-based, col 0 = #)
+  // 0:#  1:班級  2:座號  3:姓名  4:性別  5:身分證號  6:最優補助身分
+  // 7-18: subsidy cols   19:兄弟姊妹  20:多重
+  const OPT_IDX = 6;  // 最優補助身分 — always expanded
+
   const colgroup = `<colgroup>
-    <col class="c-seq">
-    <col class="c-cls"><col class="c-seat"><col class="c-name">
-    <col class="c-sex"><col class="c-idno"><col class="c-opt">
-    ${subsidyCols2.map(()=>'<col class="c-sub">').join('')}
-    <col class="c-sib"><col class="c-multi">
+    <col class="c-seq" data-ci="0">
+    <col class="c-cls" data-ci="1"><col class="c-seat" data-ci="2">
+    <col class="c-name" data-ci="3"><col class="c-sex" data-ci="4">
+    <col class="c-idno" data-ci="5">
+    <col class="${OPT_IDX===expandedColIdx?'c-expanded':'c-opt'}" data-ci="${OPT_IDX}">
+    ${subsidyCols2.map((_,i)=>`<col class="${7+i===expandedColIdx?'c-expanded':'c-sub'}" data-ci="${7+i}">`).join('')}
+    <col class="${19===expandedColIdx?'c-expanded':'c-sib'}" data-ci="19">
+    <col class="c-multi" data-ci="20">
   </colgroup>`;
 
-  document.getElementById('thead').innerHTML =
-    `${colgroup}<tr>
-      <th>#</th>
-      ${fixedCols.map(c=>`<th>${esc(c)}</th>`).join('')}
-      ${subsidyCols2.map(c=>`<th title="${esc(c)}">${esc(c.replace(/\(.*\)/g,'').trim())}</th>`).join('')}
-      <th>兄弟姊妹</th><th>多重</th>
-    </tr>`;
+  // Header labels
+  const allHeaders = ['#','班級','座號','姓名','性別','身分證號','最優補助身分',
+    ...subsidyCols2.map(c=>c.replace(/\(.*?\)/g,'').trim()),
+    '兄弟姊妹','多重'];
+  const allHeadersFull = ['#','班級','座號','姓名','性別','身分證號','最優補助身分',
+    ...subsidyCols2,'兄弟姊妹','多重'];
 
+  const headerCells = allHeaders.map((label,ci)=>{
+    if(ci===0) return `<th data-ci="0" style="cursor:default">#</th>`;
+    const isExp   = ci===expandedColIdx;
+    const isOpt   = ci===OPT_IDX; // always show full, mark as expanded-style
+    const expCls  = isExp ? 'col-expanded' : (isOpt ? '' : 'col-expandable');
+    const fullLbl = allHeadersFull[ci];
+    return `<th data-ci="${ci}" class="${expCls}" title="${esc(fullLbl)}">${esc(label)}</th>`;
+  }).join('');
+
+  document.getElementById('thead').innerHTML = `${colgroup}<tr>${headerCells}</tr>`;
+
+  // Attach header click to toggle expand
+  document.querySelectorAll('#thead th[data-ci]').forEach(th=>{
+    const ci=parseInt(th.dataset.ci);
+    if(ci===0||ci===20) return; // # and 多重 not expandable
+    th.onclick=()=>{
+      expandedColIdx = (expandedColIdx===ci) ? -1 : ci;
+      renderTable(); // re-render with new expanded state
+    };
+  });
+
+  // Body rows
   document.getElementById('tbody').innerHTML = filt.map((s,i)=>{
-    const ch     = edits[s._docId]||{};
-    const gender = s['性別']||'';
+    const ch      = edits[s._docId]||{};
+    const gender  = s['性別']||'';
     const isMulti = s.isMulti;
     const gClass  = gender==='男' ? 'row-m' : gender==='女' ? 'row-f' : '';
     const multi   = isMulti ? `<span class="mbadge">★${s.multiCount}</span>` : '';
 
-    const makeCell = (col, extraClass='') => {
-      const raw  = ch[col]!==undefined ? ch[col] : (s[col]??'');
-      const v    = esc(String(raw));
-      const chg  = ch[col]!==undefined ? ' cc' : '';
-      if(editOn) return `<td class="ec${chg} ${extraClass}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
-      return `<td class="${extraClass}${chg}">${v}</td>`;
+    const makeCell = (col, ci, extraClass='') => {
+      const raw   = ch[col]!==undefined ? ch[col] : (s[col]??'');
+      const v     = esc(String(raw));
+      const chg   = ch[col]!==undefined ? ' cc' : '';
+      const expCl = (ci===expandedColIdx||ci===OPT_IDX) ? ' col-expanded-cell' : '';
+      const cls   = `${extraClass}${chg}${expCl}`.trim();
+      if(editOn) return `<td class="ec ${cls}" data-ci="${ci}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
+      return `<td class="${cls}" data-ci="${ci}">${v}</td>`;
     };
 
-    // Fixed cells
-    const seqCell  = `<td class="tseq">${i+1}</td>`;
-    const clsCell  = makeCell('班級');
-    const seatCell = makeCell('座號');
-    const nameCell = makeCell('姓名');
-    const sexCell  = makeCell('性別');
-    // ID: truncate, hover shows full
-    const idRaw    = ch['身分證號']!==undefined ? ch['身分證號'] : (s['身分證號']??'');
-    const idChg    = ch['身分證號']!==undefined ? ' cc' : '';
-    const idCell   = editOn
-      ? `<td class="idno-cell ec${idChg}" onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`
-      : `<td class="idno-cell${idChg}" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
-    const optCell  = makeCell('最優補助身分', 'topt');
+    const seqCell  = `<td class="tseq" data-ci="0">${i+1}</td>`;
+    const clsCell  = makeCell('班級',   1);
+    const seatCell = makeCell('座號',   2);
+    const nameCell = makeCell('姓名',   3);
+    const sexCell  = makeCell('性別',   4);
 
-    // Subsidy cells — compact: empty cells show nothing, value cells overflow
-    const subCells = subsidyCols2.map(col=>{
-      const raw = ch[col]!==undefined ? ch[col] : (s[col]??'');
-      const hasVal = String(raw).trim() !== '';
-      const v   = hasVal ? esc(String(raw)) : '';
-      const chg = ch[col]!==undefined ? ' cc' : '';
-      const cls = `sub-cell ${hasVal?'has-val':'no-val'}${chg}`;
-      if(editOn) return `<td class="${cls} ec" title="${esc(col)}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
-      return `<td class="${cls}" title="${hasVal?esc(col+': '+String(raw)):''}">${v}</td>`;
+    // ID cell (ci=5)
+    const idRaw  = ch['身分證號']!==undefined ? ch['身分證號'] : (s['身分證號']??'');
+    const idChg  = ch['身分證號']!==undefined ? ' cc' : '';
+    const idExp  = expandedColIdx===5 ? ' col-expanded-cell' : '';
+    const idCls  = `idno-cell${idChg}${idExp}`;
+    const idCell = editOn
+      ? `<td class="ec ${idCls}" data-ci="5" onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`
+      : `<td class="${idCls}" data-ci="5" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
+
+    // 最優補助身分 (ci=6) — always expanded, no truncation
+    const optRaw = ch['最優補助身分']!==undefined ? ch['最優補助身分'] : (s['最優補助身分']??'');
+    const optChg = ch['最優補助身分']!==undefined ? ' cc' : '';
+    const optCell= editOn
+      ? `<td class="ec topt${optChg} col-expanded-cell" data-ci="6" onclick="sEdit(this,'${escA(s._docId)}','最優補助身分',\`${escA(String(optRaw))}\`)">${esc(String(optRaw))}</td>`
+      : `<td class="topt${optChg} col-expanded-cell" data-ci="6">${esc(String(optRaw))}</td>`;
+
+    // Subsidy cells (ci=7..18)
+    const subCells = subsidyCols2.map((col,si)=>{
+      const ci     = 7+si;
+      const raw    = ch[col]!==undefined ? ch[col] : (s[col]??'');
+      const hasVal = String(raw).trim()!=='';
+      const v      = hasVal ? esc(String(raw)) : '';
+      const chg    = ch[col]!==undefined ? ' cc' : '';
+      const expCl  = ci===expandedColIdx ? ' col-expanded-cell' : '';
+      const cls    = `sub-cell ${hasVal?'has-val':'no-val'}${chg}${expCl}`;
+      if(editOn) return `<td class="${cls} ec" data-ci="${ci}" title="${esc(col)}" onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
+      return `<td class="${cls}" data-ci="${ci}" title="${hasVal?esc(col+': '+String(raw)):esc(col)}">${v}</td>`;
     }).join('');
 
-    const sibCell  = makeCell('兄弟姊妹');
+    // 兄弟姊妹 (ci=19)
+    const sibCell = makeCell('兄弟姊妹', 19);
 
     return `<tr class="${gClass}${isMulti?' mr':''}">
       ${seqCell}${clsCell}${seatCell}${nameCell}${sexCell}${idCell}${optCell}${subCells}${sibCell}
-      <td>${multi}</td>
+      <td data-ci="20">${multi}</td>
     </tr>`;
   }).join('');
 }
