@@ -51,7 +51,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 #app{display:none;flex-direction:column;min-height:100vh;}
 
 /* TOPBAR */
-.topbar{background:#fff;border-bottom:1px solid var(--border);height:56px;padding:0 20px;
+.topbar{background:#fff;border-bottom:1px solid var(--border);height:56px;padding:0 16px;
   display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.05);}
 .tl{display:flex;align-items:center;gap:12px;}
@@ -82,18 +82,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 a.btn-sm{text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
 
 /* SUBTABS */
-.subtabs{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;}
+.subtabs{background:#fff;border-bottom:1px solid var(--border);padding:0 16px;display:flex;gap:2px;}
 .stab{padding:10px 16px;border:none;background:transparent;cursor:pointer;font-size:.83rem;
   color:var(--text2);font-family:inherit;border-bottom:2px solid transparent;transition:all .15s;}
 .stab:hover{color:var(--text);}
 .stab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
 
 /* PANELS */
-.panel{display:none;padding:20px;max-width:1440px;margin:0 auto;width:100%;}
+.panel{display:none;padding:14px 16px;max-width:100%;margin:0 auto;width:100%;}
 .panel.on{display:block;}
 
 /* CARD */
-.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px;}
 .card-title{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:14px;}
 
 /* FILTER */
@@ -302,7 +302,7 @@ td.idno-cell.col-expanded-cell { color:var(--text); }
   border:1px solid var(--red-bd);border-radius:7px;cursor:pointer;font-size:.82rem;font-family:inherit;}
 
 @media(max-width:768px){
-  .topbar{padding:0 12px;} .panel{padding:12px;}
+  .topbar{padding:0 10px;} .panel{padding:10px;}
   .brand-name small,.uname{display:none;} .tlabel{display:none;}
 }
 </style>
