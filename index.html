@@ -272,6 +272,29 @@ td.idno-cell.xp { color:var(--text) !important; }
 .ds-m{background:#fef9c3;color:#854d0e;}
 .ds-t{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
 
+/* REF TABLE */
+.ref-th{background:#f4f7fb;padding:11px 14px;text-align:center;border-bottom:2px solid var(--border);
+  border-right:1px solid #dde2e9;white-space:nowrap;font-weight:700;color:var(--text2);font-size:.78rem;}
+.ref-cat-cell{padding:11px 16px;border-bottom:1px solid #f0f3f8;border-right:1px solid #dde2e9;
+  font-weight:600;font-size:.84rem;white-space:nowrap;position:sticky;left:0;
+  background:#fff;z-index:2;}
+.ref-cat-cell.ref-stripe{background:#f9fbfb;}
+.ref-val-cell{padding:10px 14px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f2f5f8;
+  text-align:center;font-size:.9rem;}
+.ref-x{display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green-bg);color:var(--green);font-weight:700;font-size:.88rem;
+  border:1.5px solid var(--green-bd);}
+.ref-dash{color:#ccc;font-size:1rem;}
+.ref-note{padding:10px 14px;border-bottom:1px solid #f0f3f8;font-size:.78rem;color:var(--text2);text-align:left;}
+.ref-cat-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;
+  border-radius:20px;border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.81rem;font-weight:500;color:var(--text2);transition:all .15s;}
+.ref-cat-badge:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
+.ref-cat-badge .cnt{font-weight:700;color:var(--accent);font-size:.78rem;}
+/* Row hover */
+#ref-tbody tr:hover td{background:#f4f9fc !important;}
+
 /* PROMOTE */
 .promo-box{border:1.5px solid var(--yellow-bd);border-radius:var(--radius);padding:20px;
   background:var(--yellow-bg);margin-bottom:16px;}
@@ -372,6 +395,7 @@ td.idno-cell.xp { color:var(--text) !important; }
 
   <div class="subtabs">
     <button class="stab on" data-p="p-data">📋 名單查閱</button>
+    <button class="stab" data-p="p-ref">💰 補助對照表</button>
     <button class="stab" data-p="p-import" id="stab-import" style="display:none">📥 匯入資料</button>
     <button class="stab" data-p="p-promote" id="stab-promote" style="display:none">🎓 升學年</button>
   </div>
@@ -474,6 +498,57 @@ td.idno-cell.xp { color:var(--text) !important; }
         <div class="lbar"><span class="spin"></span></div>
       </div>
     </div>
+  </div>
+</div>
+
+  </div>
+</div>
+
+<!-- ═══ 補助對照表 ═══ -->
+<div class="panel" id="p-ref">
+  <div class="card">
+    <div class="card-title">💰 補助費用對照表
+      <span style="font-weight:400;font-size:.78rem;color:var(--text2)">— X 表示該身分免繳此費用</span>
+    </div>
+
+    <div style="overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)">
+      <table id="ref-table" style="border-collapse:collapse;width:100%;font-size:.85rem;table-layout:auto">
+        <thead>
+          <tr>
+            <th style="background:#f4f7fb;padding:11px 16px;text-align:left;border-bottom:2px solid var(--border);
+              border-right:1px solid #dde2e9;white-space:nowrap;font-weight:700;color:var(--text2);
+              font-size:.78rem;position:sticky;left:0;z-index:5;min-width:160px">
+              補助身分類別
+            </th>
+            <th class="ref-th">家長會費</th>
+            <th class="ref-th">平安保險費</th>
+            <th class="ref-th">午餐費</th>
+            <th class="ref-th">教科書費（書籍費）</th>
+            <th class="ref-th" id="ref-th-extra" style="display:none">備註</th>
+          </tr>
+        </thead>
+        <tbody id="ref-tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:20px;flex-wrap:wrap">
+      <div style="font-size:.8rem;color:var(--text2);line-height:1.8">
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px">圖例</div>
+        <div><span class="ref-x">✓ 免繳</span> 該身分免繳此費用</div>
+        <div><span style="color:var(--text3);font-size:.85rem">—</span> 需正常繳交</div>
+      </div>
+      <div style="font-size:.8rem;color:var(--text2);line-height:1.8">
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px">特別說明</div>
+        <div>🔹 <strong>11.功勳</strong>：全繳後退書籍費</div>
+        <div>🔹 多重身分者，以「最優補助身分」欄位所列類別為準</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick lookup: 點選類別顯示有幾人 -->
+  <div class="card">
+    <div class="card-title">📊 本學期各類別人數（點選查看名單）</div>
+    <div id="ref-stats" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
 </div>
 
@@ -615,6 +690,7 @@ async function initApp(){
       document.getElementById(b.dataset.p).classList.add('on');
       if(b.dataset.p==='p-promote'){renderDist();}
       if(b.dataset.p==='p-import'){document.getElementById('imp-term').textContent=tLabel(term);}
+      if(b.dataset.p==='p-ref'){renderRefTable();}
     };
   });
 
@@ -1317,6 +1393,107 @@ function doExport(data,label){
   XLSX.utils.book_append_sheet(wb,ws,`${tLabel(term)}_${label}`.substring(0,31));
   XLSX.writeFile(wb,`補助名單_${tLabel(term)}_${label}_${today()}.xlsx`);
 }
+
+/* ── 補助對照表 ── */
+// 資料來源：依據你提供的圖片
+const REF_DATA = [
+  { cat:'1.低收(社)',    費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
+  { cat:'2.中低收(社)', 費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
+  { cat:'3.單親(社)',   費: { 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:false }, note:'' },
+  { cat:'4.身障(學)(社)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:true  }, note:'' },
+  { cat:'5.身障(家)(社)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:true  }, note:'' },
+  { cat:'6.身障(學)',   費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:true  }, note:'' },
+  { cat:'7.身障(家)',   費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:true  }, note:'' },
+  { cat:'8.重身障(學)', 費: { 家長會費:false, 平安保險費:true,  午餐費:false, 教科書費:true  }, note:'' },
+  { cat:'9.原民生',     費: { 家長會費:false, 平安保險費:true,  午餐費:false, 教科書費:true  }, note:'' },
+  { cat:'10.原民清寒(原)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:false }, note:'' },
+  { cat:'11.功勳',      費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:false }, note:'全繳後退書籍費' },
+  { cat:'12.導師認定',  費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
+];
+const FEE_COLS = ['家長會費','平安保險費','午餐費','教科書費'];
+// Category colour map (light background + border for the row label)
+const CAT_COLORS = {
+  '1.低收(社)':    {bg:'#fef2f2',bd:'#fca5a5',tx:'#c81e1e'},
+  '2.中低收(社)':  {bg:'#fff7ed',bd:'#fdba74',tx:'#c2410c'},
+  '3.單親(社)':    {bg:'#fdf4ff',bd:'#e879f9',tx:'#86198f'},
+  '4.身障(學)(社)':{bg:'#eff6ff',bd:'#93c5fd',tx:'#1d4ed8'},
+  '5.身障(家)(社)':{bg:'#eff6ff',bd:'#93c5fd',tx:'#1d4ed8'},
+  '6.身障(學)':    {bg:'#f0f9ff',bd:'#7dd3fc',tx:'#0369a1'},
+  '7.身障(家)':    {bg:'#f0f9ff',bd:'#7dd3fc',tx:'#0369a1'},
+  '8.重身障(學)':  {bg:'#eef2ff',bd:'#a5b4fc',tx:'#3730a3'},
+  '9.原民生':      {bg:'#f0fdf4',bd:'#6ee7b7',tx:'#065f46'},
+  '10.原民清寒(原)':{bg:'#ecfdf5',bd:'#34d399',tx:'#064e3b'},
+  '11.功勳':       {bg:'#fefce8',bd:'#fde047',tx:'#854d0e'},
+  '12.導師認定':   {bg:'#f8fafc',bd:'#cbd5e1',tx:'#475569'},
+};
+
+function renderRefTable(){
+  const hasNote = REF_DATA.some(r=>r.note);
+  if(hasNote) document.getElementById('ref-th-extra').style.display='';
+
+  document.getElementById('ref-tbody').innerHTML = REF_DATA.map((row,idx)=>{
+    const clr = CAT_COLORS[row.cat]||{bg:'#fff',bd:'#dde2e9',tx:'#1a2332'};
+    const stripe = idx%2===1 ? 'ref-stripe' : '';
+
+    const feeCells = FEE_COLS.map(f=>
+      `<td class="ref-val-cell" style="${idx%2===1?'background:#f9fbfb':''}">
+        ${row.費[f]
+          ? `<span class="ref-x">✓</span>`
+          : `<span class="ref-dash">—</span>`}
+      </td>`
+    ).join('');
+
+    const noteCell = hasNote
+      ? `<td class="ref-note" style="${idx%2===1?'background:#f9fbfb':''}">${esc(row.note)}</td>`
+      : '';
+
+    // Count students with this cat in current term
+    const count = all.filter(s=>studentMatchesCat(s,row.cat)).length;
+    const countBadge = count>0
+      ? `<span style="margin-left:6px;font-size:.72rem;font-weight:700;
+          padding:1px 7px;border-radius:10px;background:rgba(0,0,0,.07);color:inherit">${count}人</span>`
+      : '';
+
+    return `<tr>
+      <td class="ref-cat-cell ${stripe}"
+          style="background:${clr.bg};border-left:3px solid ${clr.bd};color:${clr.tx}">
+        ${esc(row.cat)}${countBadge}
+      </td>
+      ${feeCells}${noteCell}
+    </tr>`;
+  }).join('');
+
+  // Quick stats badges (clickable → switch to 名單查閱 and filter)
+  const stats = document.getElementById('ref-stats');
+  stats.innerHTML = REF_DATA.map(row=>{
+    const clr=CAT_COLORS[row.cat]||{bg:'#f8fafc',bd:'#dde2e9',tx:'#475569'};
+    const count=all.filter(s=>studentMatchesCat(s,row.cat)).length;
+    if(!count) return '';
+    return `<button class="ref-cat-badge"
+        style="background:${clr.bg};border-color:${clr.bd};color:${clr.tx}"
+        onclick="filterByCat('${escA(row.cat)}')">
+      ${esc(row.cat)} <span class="cnt">${count}</span>
+    </button>`;
+  }).join('');
+}
+
+window.filterByCat=function(cat){
+  // Switch to 名單查閱, apply category filter
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelector('.stab[data-p="p-data"]').classList.add('on');
+  document.getElementById('p-data').classList.add('on');
+  // Apply filter
+  sCats.clear(); sCats.add(cat); cMulti=false;
+  document.querySelectorAll('.chip.c').forEach(b=>{
+    b.classList.toggle('on', b.dataset.v===cat);
+  });
+  document.querySelector('.chip.c[data-v="all"]')?.classList.remove('on');
+  renderTable();
+  // Rebuild cat chips to show updated state
+  const cats=getAllCatLabels();
+  buildCatChips(cats);
+};
 </script>
 </body>
 </html>
