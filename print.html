@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>列印通知單 — SJPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── SCREEN STYLES ── */
+:root{
+  --bg:#eef1f5;--surface:#fff;--border:#dde2e9;
+  --text:#1a2332;--text2:#5a6a7a;--text3:#9aaabb;
+  --accent:#1a56db;--accent2:#1e429f;--accent-bg:#eff6ff;
+  --green:#057a55;--green-bg:#f0fdf4;
+  --yellow:#92400e;--yellow-bg:#fffbeb;--yellow-bd:#fcd34d;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(145deg,#0f172a,#1e3a8a 55%,#1d4ed8);}
+.auth-card{background:#fff;border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35);}
+.auth-card h1{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+.auth-card p{color:var(--text2);font-size:.86rem;margin-bottom:26px;line-height:1.6;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px;
+  border-radius:10px;border:1.5px solid #dadce0;background:#fff;cursor:pointer;
+  font-size:.94rem;font-weight:600;color:#3c4043;font-family:inherit;transition:all .2s;}
+.btn-google:hover{background:#f8f9fa;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+.btn-google svg{width:20px;height:20px;flex-shrink:0;}
+#pending-screen{display:none;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
+.pcard{background:#fff;border-radius:var(--radius);padding:36px;max-width:400px;text-align:center;box-shadow:var(--shadow);}
+
+/* APP SCREEN */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);height:54px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.brand{display:flex;align-items:center;gap:10px;}
+.bmark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#1a56db,#6d28d9);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:700;}
+.bname{font-size:.95rem;font-weight:700;}
+.bname small{font-size:.7rem;font-weight:400;color:var(--text3);margin-left:4px;}
+.tr{display:flex;align-items:center;gap:7px;}
+.uavatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;overflow:hidden;}
+.uavatar img{width:100%;height:100%;object-fit:cover;}
+.btn-sm{padding:6px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.79rem;color:var(--text2);font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;transition:all .15s;}
+.btn-sm:hover{background:#f7f8fa;color:var(--text);}
+
+/* CONTROL PANEL */
+.ctrl-panel{padding:20px;max-width:1000px;margin:0 auto;width:100%;}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+.card-title{font-size:.9rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+
+.setting-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.setting-group{display:flex;flex-direction:column;gap:5px;}
+.setting-group label{font-size:.75rem;font-weight:700;color:var(--text2);}
+.setting-group input,.setting-group select,.setting-group textarea{
+  padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;
+  font-family:inherit;font-size:.86rem;outline:none;transition:border-color .15s;}
+.setting-group input:focus,.setting-group select:focus,.setting-group textarea:focus{border-color:var(--accent);}
+.setting-group textarea{resize:vertical;line-height:1.6;}
+
+.class-select-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.cls-btn{padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.8rem;font-family:inherit;color:var(--text2);transition:all .15s;font-weight:500;}
+.cls-btn:hover{border-color:#93c5fd;color:var(--accent);}
+.cls-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.cls-btn.all-btn{background:var(--accent-bg);color:var(--accent);border-color:#93c5fd;font-weight:700;}
+.cls-btn.all-btn.on{background:var(--accent);color:#fff;}
+
+.btn-primary{padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:8px;
+  cursor:pointer;font-size:.9rem;font-weight:700;font-family:inherit;transition:background .15s;
+  display:inline-flex;align-items:center;gap:7px;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-outline{padding:10px 18px;background:#fff;color:var(--accent);border:1.5px solid var(--accent);
+  border-radius:8px;cursor:pointer;font-size:.88rem;font-weight:600;font-family:inherit;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-outline:hover{background:var(--accent-bg);}
+
+.chk-row{display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer;}
+.chk-row input{width:16px;height:16px;cursor:pointer;}
+
+.alert{padding:10px 14px;border-radius:8px;font-size:.82rem;margin-bottom:12px;line-height:1.5;}
+.aw{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-bd);}
+.lbar{text-align:center;padding:28px;color:var(--text2);font-size:.87rem;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.term-sel{padding:5px 9px;border:1.5px solid var(--border);border-radius:7px;
+  font-family:inherit;font-size:.84rem;font-weight:600;background:#fff;cursor:pointer;outline:none;}
+.term-sel:focus{border-color:var(--accent);}
+
+/* PREVIEW CARD */
+.preview-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+.preview-scroll{max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:16px;background:#fafafa;}
+
+/* ═══════════════════════════════════════
+   PRINT STYLES — 精確模擬原系統
+═══════════════════════════════════════ */
+@media print {
+  @page{size:A4 portrait;margin:12mm 10mm;}
+  body{background:white;font-family:'Noto Serif TC','Noto Sans TC',sans-serif;font-size:10pt;}
+  #auth-screen,#pending-screen,#app{display:none !important;}
+  .print-area{display:block !important;}
+  .page-break{page-break-after:always;}
+  .page-break:last-child{page-break-after:avoid;}
+
+  .p-header{text-align:center;font-size:15pt;font-weight:bold;margin-bottom:5mm;font-family:'Noto Serif TC',serif;}
+  .p-sub{text-align:center;font-size:10pt;color:#444;margin-bottom:4mm;}
+
+  .p-instruction{font-size:8.5pt;border:1px solid #000;padding:5px 8px;margin-bottom:4mm;line-height:1.5;}
+  .p-instruction strong{font-weight:bold;}
+  .p-instruction ol{padding-left:18px;margin-top:2px;}
+  .p-instruction li{margin-bottom:1px;}
+  .p-special-note{font-weight:bold;margin-top:3px;}
+
+  .p-ref-label{font-weight:bold;font-size:9pt;margin-bottom:2mm;}
+  .p-ref-table{width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:4mm;}
+  .p-ref-table th,.p-ref-table td{border:1px solid #000;padding:2px 4px;vertical-align:top;text-align:left;}
+  .p-ref-table th{background:#e8e8e8;font-weight:bold;text-align:center;}
+
+  .p-class-label{font-weight:bold;font-size:11pt;margin-bottom:2mm;}
+  .p-main-table{width:100%;border-collapse:collapse;font-size:9.5pt;border:2px solid #000;}
+  .p-main-table th,.p-main-table td{border:1px solid #000;padding:5px 6px;vertical-align:middle;}
+  .p-main-table th{background:#d8d8d8;font-weight:bold;text-align:center;}
+  .p-main-table td:first-child{text-align:center;width:8%;}
+  .p-main-table td:nth-child(2){font-weight:bold;width:12%;}
+  .p-main-table td:nth-child(3){width:18%;}
+  .p-main-table td:nth-child(4){font-size:8.5pt;color:#333;width:31%;}
+  .p-main-table td:nth-child(5){font-size:8.5pt;color:#333;width:31%;}
+  .p-empty-row td{height:30px;}
+
+  .p-footer{margin-top:6mm;text-align:right;font-size:10.5pt;font-weight:bold;}
+}
+
+/* Screen preview of print content */
+.print-area{display:none;}
+.screen-preview .p-header{font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:10px;font-family:'Noto Serif TC',serif;}
+.screen-preview .p-instruction{border:1px solid #999;padding:10px;margin-bottom:10px;font-size:.82rem;line-height:1.6;border-radius:4px;}
+.screen-preview .p-ref-table{width:100%;border-collapse:collapse;font-size:.75rem;margin-bottom:10px;}
+.screen-preview .p-ref-table th,.screen-preview .p-ref-table td{border:1px solid #aaa;padding:3px 6px;text-align:left;}
+.screen-preview .p-ref-table th{background:#e8e8e8;font-weight:700;text-align:center;}
+.screen-preview .p-class-label{font-weight:700;font-size:.9rem;margin-bottom:6px;}
+.screen-preview .p-main-table{width:100%;border-collapse:collapse;font-size:.8rem;border:1.5px solid #333;margin-bottom:14px;}
+.screen-preview .p-main-table th,.screen-preview .p-main-table td{border:1px solid #555;padding:5px 7px;}
+.screen-preview .p-main-table th{background:#d8d8d8;font-weight:700;text-align:center;}
+.screen-preview .p-footer{text-align:right;font-size:.85rem;font-weight:700;margin-top:12px;padding-top:8px;border-top:1px solid #aaa;}
+.cls-separator{border-top:3px dashed #ccc;margin:20px 0;padding-top:4px;font-size:.72rem;color:#999;text-align:center;}
+
+@media(max-width:768px){.setting-grid{grid-template-columns:1fr;}.ctrl-panel{padding:12px;}}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div style="font-size:2.5rem;margin-bottom:12px">🖨️</div>
+    <h1>列印通知單</h1>
+    <p>請先登入才能列印班級確認通知單</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div id="pending-screen">
+  <div class="pcard">
+    <div style="font-size:2.5rem;margin-bottom:12px">⏳</div>
+    <h2 style="margin-bottom:8px">等待管理員核准</h2>
+    <p style="color:var(--text2);font-size:.86rem">核准後即可列印通知單</p>
+    <button class="btn-sm" id="btn-sp" style="margin-top:16px">登出</button>
+  </div>
+</div>
+
+<!-- APP (控制面板) -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="bmark">🖨</div>
+      <div class="bname">列印通知單<small>SJPS</small></div>
+      <select class="term-sel" id="term-sel" style="margin-left:8px"></select>
+    </div>
+    <div class="tr">
+      <a class="btn-sm" href="index.html">← 名單查閱</a>
+      <a class="btn-sm" href="subsidy.html">📊 補助統計</a>
+      <div class="uavatar" id="uavatar"></div>
+      <button class="btn-sm" id="btn-so">登出</button>
+    </div>
+  </header>
+
+  <div class="ctrl-panel">
+    <div id="app-loading" class="lbar"><span class="spin"></span>載入資料中...</div>
+    <div id="app-content" style="display:none">
+
+      <!-- 1. 表單設定 -->
+      <div class="card">
+        <div class="card-title">⚙️ 表單設定</div>
+        <div class="setting-grid">
+          <div class="setting-group">
+            <label>學年度</label>
+            <input type="text" id="cfg-year" value="114" placeholder="114">
+          </div>
+          <div class="setting-group">
+            <label>學期</label>
+            <select id="cfg-sem">
+              <option value="下學期" selected>下學期</option>
+              <option value="上學期">上學期</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label>截止日期（填入說明文字中）</label>
+            <input type="text" id="cfg-deadline" value="○月○日(○)中午前" placeholder="如：3/2(一)中午前">
+          </div>
+          <div class="setting-group">
+            <label>註冊組分機</label>
+            <input type="text" id="cfg-ext" value="112" placeholder="112">
+          </div>
+        </div>
+
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:14px">
+          <label class="chk-row"><input type="checkbox" id="cfg-ref" checked> 印出「減免項目一覽表」</label>
+          <label class="chk-row"><input type="checkbox" id="cfg-footer" checked> 印出「導師簽名」欄位</label>
+        </div>
+
+        <div class="setting-group" style="margin-top:14px">
+          <label>填報說明內容（每行一條，可用 {{deadline}} {{ext}} 替換）</label>
+          <textarea id="cfg-instructions" rows="5">請於 {{deadline}} 交回此表至註冊組 (分機{{ext}}) ； 不論有無學生申請，都需要導師簽名，再交回註冊組。
+若家長表示學生具有減免身份，卻不在下列表2中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否申請午餐減免、同校兄弟姊妹班級與姓名。
+請導師特別詢問轉學生有無高雄市減免身分，若有請家長提供本年度高雄市證明文件。
+若表單內需要刪除或新增導師認定的減免學生名單，請導師直接增列、刪除，並於備註欄註明是否申請午餐減免、同校兄弟姊妹的班級與姓名，以利出納組彙整相關費用。</textarea>
+        </div>
+
+        <div class="setting-grid" style="margin-top:14px">
+          <div class="setting-group">
+            <label>備註欄標題</label>
+            <textarea id="cfg-col4" rows="2">備註
+(系統帶入)</textarea>
+          </div>
+          <div class="setting-group">
+            <label>兄弟姊妹欄標題</label>
+            <textarea id="cfg-col5" rows="2">兄弟姊妹
+(列出同校弟妹的班級姓名)</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 選擇班級 -->
+      <div class="card">
+        <div class="card-title">📋 選擇列印班級</div>
+        <div class="class-select-grid" id="class-btns"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn-primary" id="btn-print">🖨️ 列印選取班級</button>
+          <button class="btn-outline" id="btn-preview">👁 預覽</button>
+          <span style="font-size:.8rem;color:var(--text2)" id="sel-count">已選 0 班</span>
+        </div>
+      </div>
+
+      <!-- 3. 預覽區 -->
+      <div class="preview-card" id="preview-section" style="display:none">
+        <div class="card-title">👁 預覽（實際列印效果可能略有差異）</div>
+        <div class="preview-scroll screen-preview" id="preview-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 列印區域（螢幕隱藏，列印時顯示）═══ -->
+<div class="print-area" id="print-area"></div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc,
+         collection, getDocs, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+const FB  = initializeApp({
+  apiKey:"AIzaSyDEDZVF5IDPEKsCWJxO-PMH873TbIHoE-A",
+  authDomain:"sjps-subsidylist.firebaseapp.com",
+  projectId:"sjps-subsidylist",
+  storageBucket:"sjps-subsidylist.firebasestorage.app",
+  messagingSenderId:"572948992410",
+  appId:"1:572948992410:web:7810606424cbd01115ea23"
+});
+const auth = getAuth(FB), db = getFirestore(FB);
+const ADMIN_EMAILS = ["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
+
+let cUser=null, cDoc=null, currentTerm='', allStudents=[], selectedClasses=new Set();
+
+/* ── AUTH ── */
+document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
+document.getElementById('btn-sp').onclick=()=>signOut(auth);
+document.getElementById('btn-so').onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){show('auth');return;}
+  cUser=user;
+  const uRef=doc(db,'users',user.uid);
+  let snap=await getDoc(uRef);
+  if(!snap.exists()){
+    const allU=await getDocs(collection(db,'users'));
+    const isAdm=ADMIN_EMAILS.includes(user.email)||allU.empty;
+    await setDoc(uRef,{email:user.email,displayName:user.displayName||'',customName:'',
+      photoURL:user.photoURL||'',role:isAdm?'admin':'pending',status:isAdm?'active':'pending',
+      createdAt:serverTimestamp(),approvedAt:isAdm?serverTimestamp():null});
+    snap=await getDoc(uRef);
+  } else if(ADMIN_EMAILS.includes(user.email)&&snap.data().role!=='admin'){
+    await updateDoc(uRef,{role:'admin',status:'active',approvedAt:serverTimestamp()});
+    snap=await getDoc(uRef);
+  }
+  cDoc=snap.data();
+  if(cDoc.status!=='active'){show('pending');return;}
+  initApp();
+});
+
+function show(s){
+  document.getElementById('auth-screen').style.display=s==='auth'?'flex':'none';
+  document.getElementById('pending-screen').style.display=s==='pending'?'flex':'none';
+  document.getElementById('app').style.display=s==='app'?'flex':'none';
+  if(s==='app')document.getElementById('app').style.flexDirection='column';
+}
+
+/* ── INIT ── */
+async function initApp(){
+  show('app');
+  const name=cDoc.customName||cUser.displayName||cUser.email;
+  const av=document.getElementById('uavatar');
+  av.innerHTML=cUser.photoURL?`<img src="${esc(cUser.photoURL)}" alt="">`:esc(name.charAt(0).toUpperCase());
+
+  const tSnap=await getDocs(collection(db,'termsMeta'));
+  const terms=tSnap.docs.map(d=>d.id).sort();
+  if(!terms.length){
+    document.getElementById('app-loading').innerHTML='<span style="color:var(--text3)">尚無學期資料，請先在主頁面匯入資料。</span>';
+    return;
+  }
+  currentTerm=terms[terms.length-1];
+  const sel=document.getElementById('term-sel');
+  sel.innerHTML=terms.map(t=>`<option value="${t}"${t===currentTerm?' selected':''}>${tLabel(t)}</option>`).join('');
+  sel.onchange=async()=>{currentTerm=sel.value;selectedClasses.clear();await loadData();};
+
+  document.getElementById('btn-print').onclick=doPrint;
+  document.getElementById('btn-preview').onclick=doPreview;
+
+  await loadData();
+}
+
+/* ── LOAD DATA ── */
+async function loadData(){
+  document.getElementById('app-loading').style.display='block';
+  document.getElementById('app-content').style.display='none';
+  document.getElementById('preview-section').style.display='none';
+  try{
+    const snap=await getDocs(collection(db,`terms/${currentTerm}/students`));
+    allStudents=snap.docs.map(d=>d.data());
+    buildClassButtons();
+    document.getElementById('app-loading').style.display='none';
+    document.getElementById('app-content').style.display='block';
+  }catch(e){
+    document.getElementById('app-loading').innerHTML=`<span style="color:#c81e1e">❌ ${esc(e.message)}</span>`;
+  }
+}
+
+/* ── CLASS BUTTONS ── */
+function buildClassButtons(){
+  const classes=[...new Set(allStudents.map(s=>s['班級']||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  const container=document.getElementById('class-btns');
+  // Group by grade
+  const byGrade={};
+  classes.forEach(cls=>{
+    const g=cls.match(/^(\d)/)?cls[0]:'?';
+    if(!byGrade[g])byGrade[g]=[];
+    byGrade[g].push(cls);
+  });
+
+  let html=`<button class="cls-btn all-btn" id="btn-all-cls">全選</button>`;
+  Object.entries(byGrade).sort().forEach(([g,cls])=>{
+    html+=`<span style="font-size:.72rem;font-weight:700;color:var(--text3);padding:6px 2px 0;align-self:flex-end">${g}年</span>`;
+    cls.forEach(c=>{html+=`<button class="cls-btn" data-cls="${esc(c)}">${esc(c)}</button>`;});
+  });
+  container.innerHTML=html;
+
+  container.querySelectorAll('.cls-btn[data-cls]').forEach(b=>{
+    b.onclick=()=>{
+      const c=b.dataset.cls;
+      if(selectedClasses.has(c)){selectedClasses.delete(c);b.classList.remove('on');}
+      else{selectedClasses.add(c);b.classList.add('on');}
+      updateSelCount();
+    };
+  });
+  document.getElementById('btn-all-cls').onclick=()=>{
+    const all=container.querySelectorAll('.cls-btn[data-cls]');
+    const allSel=selectedClasses.size===all.length;
+    selectedClasses.clear();
+    all.forEach(b=>{
+      if(!allSel){selectedClasses.add(b.dataset.cls);b.classList.add('on');}
+      else b.classList.remove('on');
+    });
+    updateSelCount();
+  };
+}
+
+function updateSelCount(){
+  document.getElementById('sel-count').textContent=`已選 ${selectedClasses.size} 班`;
+}
+
+/* ── CONFIG HELPERS ── */
+function getCfg(){
+  const year=document.getElementById('cfg-year').value.trim()||'114';
+  const sem=document.getElementById('cfg-sem').value;
+  const deadline=document.getElementById('cfg-deadline').value.trim();
+  const ext=document.getElementById('cfg-ext').value.trim();
+  const rawInstr=document.getElementById('cfg-instructions').value;
+  const instructions=rawInstr
+    .replace(/\{\{deadline\}\}/g,deadline)
+    .replace(/\{\{ext\}\}/g,ext)
+    .split('\n').filter(l=>l.trim());
+  const showRef=document.getElementById('cfg-ref').checked;
+  const showFooter=document.getElementById('cfg-footer').checked;
+  const col4=document.getElementById('cfg-col4').value;
+  const col5=document.getElementById('cfg-col5').value;
+  return{year,sem,deadline,ext,instructions,showRef,showFooter,col4,col5};
+}
+
+/* ── REF TABLE DATA ── */
+const REF_TABLE=[
+  {id:'1.低收、2.中低收(社會局通過)',item:'全免',note:'由社會局比對系統檢核，免附證明。請導師填寫同校弟妹班級姓名。'},
+  {id:'3.單親子女補助(社會局通過)',item:'午餐費',note:'由社會局比對系統檢核，免附證明。請導師填寫同校弟妹班級姓名。'},
+  {id:'4.身障生活補助-學生(社會局通過)',item:'午餐費、書籍費',note:'社會局比對系統自動匯入'},
+  {id:'5.身障生活補助-家長(社會局通過)',item:'午餐費、書籍費',note:'家長提供身分證字號由註冊組比對'},
+  {id:'6.一般身障-學生',item:'書籍費',note:'特教組提供名單；導師校務系統註記'},
+  {id:'7.身障家長',item:'書籍費',note:'家長繳交證明影本；導師校務系統註記'},
+  {id:'8.重度身障-學生',item:'書籍費、保險費',note:'特教組提供名單；導師校務系統註記'},
+  {id:'9.一般原民生',item:'書籍費、保險費',note:'家長繳交戶口名簿影本；導師校務系統註記'},
+  {id:'10.原住民清寒(原民會通過)',item:'午餐費',note:'午餐執秘依通過審核公文負責申請'},
+  {id:'11.功勳子女',item:'先全繳再退書籍費',note:'家長繳交撫卹證明影本；導師校務系統註記'},
+  {id:'12.導師認定',item:'全免',note:'午餐執秘提供申請表，請導師填寫'},
+];
+
+/* ── BUILD ONE CLASS HTML ── */
+function buildClassHTML(cls, cfg, isScreen=false){
+  const students=allStudents
+    .filter(s=>s['班級']===cls)
+    .sort((a,b)=>Number(a['座號']||0)-Number(b['座號']||0));
+
+  const tableClass=isScreen?'p-main-table':'p-main-table';
+
+  // Title
+  let html=`<div class="p-header">${esc(cfg.year)}學年度 ${esc(cfg.sem)} 減免申請調查表(${esc(cls)})</div>`;
+
+  // Instructions
+  html+=`<div class="p-instruction">
+    <strong>【填報說明】</strong>
+    <ol>
+      ${cfg.instructions.map(l=>`<li>${esc(l)}</li>`).join('')}
+    </ol>
+    <div class="p-special-note">★★ 學生申請導師認定午餐費減免，請向午餐執秘領取申請單。</div>
+  </div>`;
+
+  // Ref table
+  if(cfg.showRef){
+    html+=`<div class="p-ref-label">表1 — 減免項目一覽表</div>
+    <table class="p-ref-table">
+      <thead><tr><th width="35%">減免身份</th><th width="25%">減免項目</th><th width="40%">備註</th></tr></thead>
+      <tbody>
+        ${REF_TABLE.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.item)}</td><td>${esc(r.note)}</td></tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  // Student table
+  html+=`<div class="p-class-label">表2 — ${esc(cls)} 班級確認名單</div>
+  <table class="${tableClass}">
+    <thead><tr>
+      <th style="width:8%;text-align:center">座號</th>
+      <th style="width:12%;text-align:center">姓名</th>
+      <th style="width:18%;text-align:center">目前系統身分</th>
+      <th style="width:31%;text-align:left;white-space:pre-line;vertical-align:top">${esc(cfg.col4)}</th>
+      <th style="width:31%;text-align:left;white-space:pre-line;vertical-align:top">${esc(cfg.col5)}</th>
+    </tr></thead>
+    <tbody>`;
+
+  students.forEach(s=>{
+    const opt=esc(s.optimalType||s['最優補助身分']||'');
+    // Build note: collect non-empty subsidy cols
+    const SUBSIDY_COLS=['1.低收(社)','2.中低收(社)','3.單親(社)','4.身障(學)(社)',
+      '5.身障(家)(社)','6.身障(學)','7.身障(家)','8.重身障(學)',
+      '9.原民生','10.原民清寒(原)','11.功勳','12.導師認定'];
+    const details=SUBSIDY_COLS
+      .filter(c=>String(s[c]||'').trim())
+      .map(c=>`【${c}】${String(s[c]||'').trim()}`)
+      .join('\n');
+    const siblings=esc(s['兄弟姊妹']||'');
+    html+=`<tr>
+      <td>${esc(String(s['座號']||''))}</td>
+      <td>${esc(s['姓名']||'')}</td>
+      <td>${opt}</td>
+      <td style="font-size:.78em;white-space:pre-wrap;vertical-align:top">${esc(details)}</td>
+      <td style="font-size:.78em;vertical-align:top">${siblings}</td>
+    </tr>`;
+  });
+
+  // 2 empty rows
+  html+=`<tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>
+         <tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody></table>`;
+
+  // Footer signature
+  if(cfg.showFooter){
+    html+=`<div class="p-footer">導師簽名：_______________________ &nbsp;&nbsp;&nbsp; 日期：_______ 年 _______ 月 _______ 日</div>`;
+  }
+
+  return html;
+}
+
+/* ── PREVIEW ── */
+function doPreview(){
+  if(!selectedClasses.size){alert('請先選擇班級');return;}
+  const cfg=getCfg();
+  const classes=[...selectedClasses].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  let html='';
+  classes.forEach((cls,i)=>{
+    if(i>0) html+=`<div class="cls-separator">── 下一班：${esc(cls)} ──</div>`;
+    html+=buildClassHTML(cls,cfg,true);
+  });
+  document.getElementById('preview-content').innerHTML=html;
+  document.getElementById('preview-section').style.display='block';
+  document.getElementById('preview-section').scrollIntoView({behavior:'smooth'});
+}
+
+/* ── PRINT ── */
+function doPrint(){
+  if(!selectedClasses.size){alert('請先選擇班級');return;}
+  const cfg=getCfg();
+  const classes=[...selectedClasses].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  let html='';
+  classes.forEach((cls,i)=>{
+    const isLast=i===classes.length-1;
+    html+=`<div class="${isLast?'':'page-break'}">${buildClassHTML(cls,cfg,false)}</div>`;
+  });
+  document.getElementById('print-area').innerHTML=html;
+  // Small delay to let DOM update, then print
+  setTimeout(()=>window.print(),150);
+}
+</script>
+</body>
+</html>
