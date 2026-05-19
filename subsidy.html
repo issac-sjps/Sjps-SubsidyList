@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>補助申請統計 — SJPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f5;--surface:#fff;--surface2:#f7f8fa;--border:#dde2e9;
+  --text:#1a2332;--text2:#5a6a7a;--text3:#9aaabb;
+  --accent:#1a56db;--accent2:#1e429f;--accent-bg:#eff6ff;
+  --green:#057a55;--green-bg:#f0fdf4;--green-bd:#6ee7b7;
+  --red:#c81e1e;--red-bg:#fef2f2;--red-bd:#fca5a5;
+  --yellow:#92400e;--yellow-bg:#fffbeb;--yellow-bd:#fcd34d;
+  --teal:#0f766e;--teal-bg:#f0fdfa;--teal-bd:#5eead4;
+  --purple:#6d28d9;--purple-bg:#f5f3ff;--purple-bd:#c4b5fd;
+  --orange:#c05621;--orange-bg:#fff7ed;--orange-bd:#fdba74;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(145deg,#0f172a,#1e3a8a 55%,#1d4ed8);}
+.auth-card{background:#fff;border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35);}
+.auth-card h1{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+.auth-card p{color:var(--text2);font-size:.86rem;margin-bottom:26px;line-height:1.6;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px;
+  border-radius:10px;border:1.5px solid #dadce0;background:#fff;cursor:pointer;
+  font-size:.94rem;font-weight:600;color:#3c4043;font-family:inherit;transition:all .2s;}
+.btn-google:hover{background:#f8f9fa;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+.btn-google svg{width:20px;height:20px;flex-shrink:0;}
+#pending-screen{display:none;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
+.pcard{background:#fff;border-radius:var(--radius);padding:36px;max-width:400px;text-align:center;box-shadow:var(--shadow);}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);height:54px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.brand{display:flex;align-items:center;gap:10px;}
+.bmark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#1a56db,#6d28d9);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:700;}
+.bname{font-size:.95rem;font-weight:700;}
+.bname small{font-size:.7rem;font-weight:400;color:var(--text3);margin-left:4px;}
+.tr{display:flex;align-items:center;gap:7px;}
+.uavatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;overflow:hidden;}
+.uavatar img{width:100%;height:100%;object-fit:cover;}
+.btn-sm{padding:6px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.79rem;color:var(--text2);font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;transition:all .15s;}
+.btn-sm:hover{background:var(--surface2);color:var(--text);}
+
+/* TABS */
+.tabs{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;}
+.tab{padding:10px 16px;border:none;background:transparent;cursor:pointer;font-size:.83rem;
+  color:var(--text2);font-family:inherit;border-bottom:2px solid transparent;transition:all .15s;}
+.tab:hover{color:var(--text);}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+
+/* PAGE */
+.page{display:none;padding:20px;max-width:1200px;margin:0 auto;width:100%;}
+.page.on{display:block;}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+.stat-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
+.stat-card.accent{background:linear-gradient(135deg,#1a56db,#1e429f);color:#fff;}
+.stat-card.green{background:linear-gradient(135deg,#057a55,#0f766e);color:#fff;}
+.stat-card.teal{background:linear-gradient(135deg,#0f766e,#0e7490);color:#fff;}
+.stat-card.purple{background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;}
+.stat-label{font-size:.74rem;font-weight:600;opacity:.8;margin-bottom:6px;letter-spacing:.3px;}
+.stat-num{font-size:2rem;font-weight:700;line-height:1;}
+.stat-sub{font-size:.72rem;opacity:.75;margin-top:4px;}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+.card-title{font-size:.9rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.card-title .sub{font-size:.77rem;font-weight:400;color:var(--text2);}
+
+/* MATRIX TABLE */
+.matrix-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);}
+.mtbl{border-collapse:collapse;width:100%;font-size:.82rem;}
+.mtbl th{background:#f4f7fb;padding:9px 12px;text-align:center;border-bottom:2px solid var(--border);
+  border-right:1px solid var(--border);font-weight:700;color:var(--text2);font-size:.75rem;white-space:nowrap;}
+.mtbl th:first-child{text-align:left;}
+.mtbl td{padding:8px 12px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f5f7fa;text-align:center;}
+.mtbl td:first-child{text-align:left;font-weight:600;background:#f9fbfb;}
+.mtbl tr:last-child td{border-bottom:none;}
+.mtbl .ttl-row td{background:#eff6ff;font-weight:700;color:var(--accent);}
+.mtbl .amt-col{text-align:right;font-family:'JetBrains Mono',monospace;color:var(--green);font-weight:700;}
+.zero{color:var(--text3);}
+
+/* STUDENT LIST */
+.stbl-wrap{overflow-x:auto;max-height:420px;border-radius:8px;border:1px solid var(--border);}
+.stbl{border-collapse:collapse;width:100%;font-size:.82rem;}
+.stbl thead th{background:#f4f7fb;padding:9px 12px;text-align:left;border-bottom:2px solid var(--border);
+  border-right:1px solid var(--border);font-weight:700;color:var(--text2);font-size:.75rem;
+  position:sticky;top:0;z-index:5;white-space:nowrap;}
+.stbl tbody td{padding:8px 12px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f5f7fa;white-space:nowrap;}
+.stbl tbody tr:hover td{background:#f8fafc;}
+.stbl tbody tr:last-child td{border-bottom:none;}
+.badge{padding:2px 8px;border-radius:20px;font-size:.71rem;font-weight:700;display:inline-block;}
+
+/* GRADE FILTER */
+.grade-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.gf-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;font-size:.77rem;font-family:inherit;color:var(--text2);transition:all .15s;}
+.gf-btn.on{background:var(--accent-bg);border-color:#93c5fd;color:var(--accent);font-weight:700;}
+
+/* BOOK FEES */
+.fee-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;}
+.fee-item label{font-size:.72rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;text-align:center;}
+.fee-item input{width:100%;padding:7px;border:1.5px solid var(--border);border-radius:7px;
+  font-family:'JetBrains Mono',monospace;font-size:.88rem;text-align:center;outline:none;
+  transition:border-color .15s;}
+.fee-item input:focus{border-color:var(--accent);}
+.btn-save{padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:7px;
+  cursor:pointer;font-size:.84rem;font-weight:600;font-family:inherit;}
+.btn-save:hover{background:var(--accent2);}
+
+/* STATE */
+.lbar{text-align:center;padding:32px;color:var(--text2);font-size:.87rem;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:.85rem;}
+.term-sel{padding:5px 9px;border:1.5px solid var(--border);border-radius:7px;
+  font-family:inherit;font-size:.84rem;font-weight:600;background:#fff;cursor:pointer;outline:none;}
+.term-sel:focus{border-color:var(--accent);}
+
+@media(max-width:768px){
+  .page{padding:12px;}
+  .fee-grid{grid-template-columns:repeat(3,1fr);}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div style="font-size:2.5rem;margin-bottom:12px">📊</div>
+    <h1>補助申請統計</h1>
+    <p>請先登入才能查看補助統計資訊</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div id="pending-screen">
+  <div class="pcard">
+    <div style="font-size:2.5rem;margin-bottom:12px">⏳</div>
+    <h2 style="margin-bottom:8px">等待管理員核准</h2>
+    <p style="color:var(--text2);font-size:.86rem">核准後即可查看補助統計資訊</p>
+    <button class="btn-sm" id="btn-sp" style="margin-top:16px">登出</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="bmark">補</div>
+      <div class="bname">補助統計<small>SJPS</small></div>
+      <select class="term-sel" id="term-sel" style="margin-left:8px"></select>
+    </div>
+    <div class="tr">
+      <a class="btn-sm" href="index.html">← 名單查閱</a>
+      <a class="btn-sm" href="print.html">🖨 列印通知單</a>
+      <div class="uavatar" id="uavatar"></div>
+      <button class="btn-sm" id="btn-so">登出</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" data-p="p-dash">📈 總覽</button>
+    <button class="tab" data-p="p-moe">🎓 教育部</button>
+    <button class="tab" data-p="p-book">📖 書籍費</button>
+    <button class="tab" data-p="p-note">📚 簿本費</button>
+    <button class="tab" data-p="p-indig">🌲 原住民</button>
+    <button class="tab" data-p="p-cross">📊 交叉分析</button>
+    <button class="tab" data-p="p-fees">💰 書價設定</button>
+  </div>
+
+  <!-- ═══ 總覽 ═══ -->
+  <div class="page on" id="p-dash">
+    <div id="dash-loading" class="lbar"><span class="spin"></span>載入中...</div>
+    <div id="dash-content" style="display:none">
+      <div class="stat-grid">
+        <div class="stat-card accent">
+          <div class="stat-label">本學期申請總人數</div>
+          <div class="stat-num" id="d-total">0</div>
+          <div class="stat-sub" id="d-gender">男 0 / 女 0</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">預估補助總金額</div>
+          <div class="stat-num" id="d-money">$0</div>
+          <div class="stat-sub">教育部 + 書籍費 + 簿本費</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-label">教育部無力繳交</div>
+          <div class="stat-num" id="d-moe">$0</div>
+          <div class="stat-sub" id="d-moe-cnt">0 人</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">多重身分學生</div>
+          <div class="stat-num" id="d-multi">0</div>
+          <div class="stat-sub">人</div>
+        </div>
+      </div>
+
+      <!-- 多重身分清單 -->
+      <div class="card" id="multi-card" style="display:none">
+        <div class="card-title">👥 多重身分學生清單</div>
+        <div class="stbl-wrap">
+          <table class="stbl">
+            <thead><tr><th>班級座號</th><th>姓名</th><th>最優補助身分</th><th>補助明細</th></tr></thead>
+            <tbody id="multi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 各類別統計 -->
+      <div class="card">
+        <div class="card-title">📋 各補助類別人數</div>
+        <div id="cat-bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 教育部 ═══ -->
+  <div class="page" id="p-moe">
+    <div class="card">
+      <div class="card-title">🎓 教育部無力繳交補助 <span class="sub" id="moe-total-lbl"></span></div>
+      <div class="matrix-wrap"><table class="mtbl" id="moe-matrix"></table></div>
+    </div>
+    <div class="card">
+      <div class="grade-filter" id="moe-gf"></div>
+      <div class="stbl-wrap">
+        <table class="stbl">
+          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>身分</th><th>補助項目</th><th style="text-align:right">金額</th></tr></thead>
+          <tbody id="moe-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 書籍費 ═══ -->
+  <div class="page" id="p-book">
+    <div class="card">
+      <div class="card-title">📖 高雄市書籍費補助 <span class="sub">排除低收、中低收（教育部補助）</span> <span class="sub" id="book-total-lbl"></span></div>
+      <div class="matrix-wrap"><table class="mtbl" id="book-matrix"></table></div>
+    </div>
+    <div class="card">
+      <div class="grade-filter" id="book-gf"></div>
+      <div class="stbl-wrap">
+        <table class="stbl">
+          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>核定類別</th><th>補助原因</th><th style="text-align:right">金額</th></tr></thead>
+          <tbody id="book-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 簿本費 ═══ -->
+  <div class="page" id="p-note">
+    <div class="card">
+      <div class="card-title">📚 高雄市簿本費（$200）<span class="sub" id="note-total-lbl"></span></div>
+      <div class="matrix-wrap"><table class="mtbl" id="note-matrix"></table></div>
+    </div>
+    <div class="card">
+      <div class="grade-filter" id="note-gf"></div>
+      <div class="stbl-wrap">
+        <table class="stbl">
+          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>身分</th><th>補助原因</th><th style="text-align:right">金額</th></tr></thead>
+          <tbody id="note-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 原住民 ═══ -->
+  <div class="page" id="p-indig">
+    <div class="card">
+      <div class="card-title">🌲 原住民學生統計 <span class="sub" id="indig-total-lbl"></span></div>
+      <div id="tribe-bars"></div>
+    </div>
+    <div class="card">
+      <div class="grade-filter" id="indig-gf"></div>
+      <div class="stbl-wrap">
+        <table class="stbl">
+          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>族別</th><th>原始備註</th></tr></thead>
+          <tbody id="indig-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 交叉分析 ═══ -->
+  <div class="page" id="p-cross">
+    <div class="card">
+      <div class="card-title">📊 補助類別 × 班級 交叉分析表</div>
+      <div class="matrix-wrap"><table class="mtbl" id="cross-table"></table></div>
+    </div>
+  </div>
+
+  <!-- ═══ 書價設定 ═══ -->
+  <div class="page" id="p-fees">
+    <div class="card">
+      <div class="card-title">💰 各年級書籍費設定</div>
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        設定各年級的教科書費用，用於計算書籍費補助金額。修改後請按「儲存」，資料會存入 Firestore 供所有頁面使用。
+      </p>
+      <div class="fee-grid" id="fee-grid"></div>
+      <button class="btn-save" id="btn-save-fees">💾 儲存書價</button>
+      <span id="fee-saved" style="font-size:.8rem;color:var(--green);margin-left:10px;display:none">✅ 已儲存</span>
+    </div>
+    <div class="card">
+      <div class="card-title">📌 補助金額說明</div>
+      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:9px 12px;text-align:left;border-bottom:2px solid var(--border)">身分類別</th>
+          <th style="padding:9px 12px;text-align:left;border-bottom:2px solid var(--border)">教育部金額</th>
+          <th style="padding:9px 12px;text-align:left;border-bottom:2px solid var(--border)">書籍費金額</th>
+          <th style="padding:9px 12px;text-align:left;border-bottom:2px solid var(--border)">簿本費</th>
+        </tr></thead>
+        <tbody id="fee-explain"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc,
+         collection, getDocs, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+const FB  = initializeApp({
+  apiKey:"AIzaSyDEDZVF5IDPEKsCWJxO-PMH873TbIHoE-A",
+  authDomain:"sjps-subsidylist.firebaseapp.com",
+  projectId:"sjps-subsidylist",
+  storageBucket:"sjps-subsidylist.firebasestorage.app",
+  messagingSenderId:"572948992410",
+  appId:"1:572948992410:web:7810606424cbd01115ea23"
+});
+const auth = getAuth(FB), db = getFirestore(FB);
+const ADMIN_EMAILS = ["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
+
+// Default book fees per grade
+const DEFAULT_FEES = {1:1009,2:952,3:1171,4:1184,5:1213,6:1109};
+const SUBSIDY_COLS = [
+  '1.低收(社)','2.中低收(社)','3.單親(社)','4.身障(學)(社)',
+  '5.身障(家)(社)','6.身障(學)','7.身障(家)','8.重身障(學)',
+  '9.原民生','10.原民清寒(原)','11.功勳','12.導師認定'
+];
+const CAT_COLORS = {
+  '1.低收(社)':{bg:'#fef2f2',tx:'#c81e1e'},
+  '2.中低收(社)':{bg:'#fff7ed',tx:'#c2410c'},
+  '3.單親(社)':{bg:'#fdf4ff',tx:'#86198f'},
+  '4.身障(學)(社)':{bg:'#eff6ff',tx:'#1d4ed8'},
+  '5.身障(家)(社)':{bg:'#eff6ff',tx:'#1d4ed8'},
+  '6.身障(學)':{bg:'#f0f9ff',tx:'#0369a1'},
+  '7.身障(家)':{bg:'#f0f9ff',tx:'#0369a1'},
+  '8.重身障(學)':{bg:'#eef2ff',tx:'#3730a3'},
+  '9.原民生':{bg:'#f0fdf4',tx:'#065f46'},
+  '10.原民清寒(原)':{bg:'#ecfdf5',tx:'#064e3b'},
+  '11.功勳':{bg:'#fefce8',tx:'#854d0e'},
+  '12.導師認定':{bg:'#f8fafc',tx:'#475569'},
+};
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
+function money(v){return v?'$'+Number(v).toLocaleString():'$0';}
+function grade(cls){const m=String(cls||'').match(/^(\d)/);return m?parseInt(m[1]):0;}
+
+let cUser=null, cDoc=null, currentTerm='', allStudents=[], bookFees={...DEFAULT_FEES};
+
+/* ── AUTH ── */
+document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
+document.getElementById('btn-sp').onclick=()=>signOut(auth);
+document.getElementById('btn-so').onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){show('auth');return;}
+  cUser=user;
+  const uRef=doc(db,'users',user.uid);
+  let snap=await getDoc(uRef);
+  if(!snap.exists()){
+    const allU=await getDocs(collection(db,'users'));
+    const isAdm=ADMIN_EMAILS.includes(user.email)||allU.empty;
+    await setDoc(uRef,{email:user.email,displayName:user.displayName||'',customName:'',
+      photoURL:user.photoURL||'',role:isAdm?'admin':'pending',status:isAdm?'active':'pending',
+      createdAt:serverTimestamp(),approvedAt:isAdm?serverTimestamp():null});
+    snap=await getDoc(uRef);
+  } else if(ADMIN_EMAILS.includes(user.email)&&snap.data().role!=='admin'){
+    await updateDoc(uRef,{role:'admin',status:'active',approvedAt:serverTimestamp()});
+    snap=await getDoc(uRef);
+  }
+  cDoc=snap.data();
+  if(cDoc.status!=='active'){show('pending');return;}
+  initApp();
+});
+
+function show(s){
+  document.getElementById('auth-screen').style.display=s==='auth'?'flex':'none';
+  document.getElementById('pending-screen').style.display=s==='pending'?'flex':'none';
+  document.getElementById('app').style.display=s==='app'?'flex':'none';
+  if(s==='app')document.getElementById('app').style.flexDirection='column';
+}
+
+/* ── INIT ── */
+async function initApp(){
+  show('app');
+  const name=cDoc.customName||cUser.displayName||cUser.email;
+  const av=document.getElementById('uavatar');
+  av.innerHTML=cUser.photoURL?`<img src="${esc(cUser.photoURL)}" alt="">`:esc(name.charAt(0).toUpperCase());
+
+  // Load book fees from Firestore
+  const feeSnap=await getDoc(doc(db,'settings','bookFees'));
+  if(feeSnap.exists()) bookFees={...DEFAULT_FEES,...feeSnap.data()};
+  buildFeeGrid();
+  buildFeeExplain();
+
+  // Load terms
+  const tSnap=await getDocs(collection(db,'termsMeta'));
+  const terms=tSnap.docs.map(d=>d.id).sort();
+  if(!terms.length){
+    document.getElementById('dash-loading').innerHTML='<span style="color:var(--text3)">尚無學期資料，請先在主頁面匯入資料。</span>';
+    return;
+  }
+  currentTerm=terms[terms.length-1];
+  const sel=document.getElementById('term-sel');
+  sel.innerHTML=terms.map(t=>`<option value="${t}"${t===currentTerm?' selected':''}>${tLabel(t)}</option>`).join('');
+  sel.onchange=async()=>{currentTerm=sel.value;await loadData();};
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.onclick=()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+      document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      document.getElementById(b.dataset.p).classList.add('on');
+    };
+  });
+
+  // Save fees
+  document.getElementById('btn-save-fees').onclick=saveFees;
+
+  await loadData();
+}
+
+/* ── LOAD DATA ── */
+async function loadData(){
+  document.getElementById('dash-loading').style.display='block';
+  document.getElementById('dash-content').style.display='none';
+  try{
+    const snap=await getDocs(collection(db,`terms/${currentTerm}/students`));
+    allStudents=snap.docs.map(d=>d.data());
+    renderAll();
+    document.getElementById('dash-loading').style.display='none';
+    document.getElementById('dash-content').style.display='block';
+  }catch(e){
+    document.getElementById('dash-loading').innerHTML=`<span style="color:var(--red)">❌ ${esc(e.message)}</span>`;
+  }
+}
+
+/* ── RENDER ALL ── */
+function renderAll(){
+  const stats=computeStats();
+  renderDash(stats);
+  renderMoe(stats);
+  renderBook(stats);
+  renderNote(stats);
+  renderIndig(stats);
+  renderCross();
+}
+
+/* ── COMPUTE STATS ── */
+function computeStats(){
+  let moeTotal=0,moeCount=0,bookTotal=0,bookCount=0,noteTotal=0,noteCount=0;
+  let maleC=0,femaleC=0,multiC=0;
+  const moeStudents=[],bookStudents=[],noteStudents=[],indigStudents=[];
+  const catCounts={};
+
+  allStudents.forEach(s=>{
+    const opt=s.optimalType||s['最優補助身分']||'';
+    const cls=s['班級']||'';
+    const g=grade(cls);
+    const fee=bookFees[g]||0;
+
+    // Gender
+    if((s['性別']||'')==='男')maleC++;
+    else if((s['性別']||'')==='女')femaleC++;
+
+    // Multi
+    if(s.isMulti)multiC++;
+
+    // Category counts
+    SUBSIDY_COLS.forEach(col=>{
+      if(String(s[col]||'').trim()){
+        if(!catCounts[col])catCounts[col]=0;
+        catCounts[col]++;
+      }
+    });
+
+    // MOE (教育部): 低收 $600課本, 中低收 $833(課本600+保險233), 導師認定 $833
+    let moeType='',moeAmt=0,moeItems='';
+    if(opt.includes('低收')&&!opt.includes('中低')){moeType='低收入戶';moeAmt=600;moeItems='課本 $600';}
+    else if(opt.includes('中低')){moeType='中低收入戶';moeAmt=833;moeItems='課本 $600 + 保險 $233';}
+    else if(opt.includes('導師')){moeType='導師認定';moeAmt=833;moeItems='課本 $600 + 保險 $233';}
+    if(moeType){moeTotal+=moeAmt;moeCount++;moeStudents.push({...s,moeType,moeAmt,moeItems});}
+
+    // Book (書籍費 KH): 身障(任何)、原民、功勳 → 各年級書價; 排除低收中低（教育部已補）
+    let bookType='',bookAmt=0;
+    const allInfo=(opt||'')+(s['mergedDetails']||'');
+    const isDisab=allInfo.includes('身障')||SUBSIDY_COLS.slice(3,8).some(c=>String(s[c]||'').trim());
+    const isIndig=allInfo.includes('原民');
+    const isLow=opt.includes('低收')&&!opt.includes('中低');
+    const isMid=opt.includes('中低');
+    const isSingle=opt.includes('單親');
+    const isMerit=opt.includes('功勳');
+    if(isDisab){bookType='身心障礙學生/家長子女';}
+    else if(isLow){bookType='低收入戶學生';}
+    else if(isMid&&isSingle){bookType='中低收入單親家庭學生';}
+    else if(isIndig){bookType='原住民籍學生';}
+    else if(isMerit){bookType='功勳及公教遺族';}
+    if(bookType&&fee>0){bookTotal+=fee;bookCount++;bookAmt=fee;
+      bookStudents.push({...s,bookType,bookAmt});}
+
+    // Notebook (簿本費): 中低收 + 導師認定 → $200
+    if(opt.includes('中低')||opt.includes('導師')){
+      noteTotal+=200;noteCount++;
+      noteStudents.push({...s,noteType:opt.includes('中低')?'中低收入戶':'導師認定'});
+    }
+
+    // Indigenous
+    if(allInfo.includes('原民')){
+      const raw=(s['9.原民生']||s['10.原民清寒(原)']||'');
+      const tribeM=raw.match(/([^\s(（）)]+族)/);
+      indigStudents.push({...s,tribe:tribeM?tribeM[1]:'未標記'});
+    }
+  });
+
+  return {
+    total:allStudents.length,maleC,femaleC,multiC,
+    moeTotal,moeCount,moeStudents,
+    bookTotal,bookCount,bookStudents,
+    noteTotal,noteCount,noteStudents,
+    indigStudents,catCounts
+  };
+}
+
+/* ── DASHBOARD ── */
+function renderDash(s){
+  document.getElementById('d-total').textContent=s.total;
+  document.getElementById('d-gender').textContent=`男 ${s.maleC} / 女 ${s.femaleC}`;
+  document.getElementById('d-money').textContent=money(s.moeTotal+s.bookTotal+s.noteTotal);
+  document.getElementById('d-moe').textContent=money(s.moeTotal);
+  document.getElementById('d-moe-cnt').textContent=s.moeCount+' 人';
+  document.getElementById('d-multi').textContent=s.multiC;
+
+  // Multi list
+  const multiList=allStudents.filter(x=>x.isMulti);
+  if(multiList.length){
+    document.getElementById('multi-card').style.display='';
+    document.getElementById('multi-tbody').innerHTML=multiList.map(x=>`<tr>
+      <td>${esc(x['班級']||'')}-${esc(String(x['座號']||''))}</td>
+      <td style="font-weight:600">${esc(x['姓名']||'')}</td>
+      <td>${esc(x.optimalType||x['最優補助身分']||'')}</td>
+      <td style="font-size:.76rem;color:var(--text2)">${esc(SUBSIDY_COLS.filter(c=>String(x[c]||'').trim()).join('、'))}</td>
+    </tr>`).join('');
+  }
+
+  // Category bars
+  const sorted=Object.entries(s.catCounts).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0]?.[1]||1;
+  document.getElementById('cat-bars').innerHTML=sorted.map(([cat,cnt])=>{
+    const clr=CAT_COLORS[cat]||{bg:'#f0f0f0',tx:'#333'};
+    const pct=Math.round(cnt/max*100);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="width:140px;font-size:.79rem;font-weight:600;color:${clr.tx}">${esc(cat)}</span>
+      <div style="flex:1;height:9px;border-radius:5px;background:${clr.bg}">
+        <div style="height:100%;border-radius:5px;background:${clr.tx};width:${pct}%;opacity:.7"></div>
+      </div>
+      <span style="font-weight:700;color:${clr.tx};width:36px;text-align:right">${cnt}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ── MOE ── */
+function renderMoe(s){
+  document.getElementById('moe-total-lbl').textContent=`— 共 ${s.moeCount} 人 ${money(s.moeTotal)}`;
+  const cats=['低收入戶','中低收入戶','導師認定'];
+  const matrix={};
+  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
+  s.moeStudents.forEach(x=>{
+    const g=grade(x['班級']||'');
+    if(matrix[x.moeType]&&g){matrix[x.moeType][g]++;matrix[x.moeType].total++;
+      matrix[x.moeType].amt+=(x.moeType==='低收入戶'?600:833);}
+  });
+  buildMatrix('moe-matrix',cats,matrix,s.moeTotal,'#eff6ff','var(--accent)');
+  buildGradeFilter('moe-gf','moe',(g)=>renderMoeList(s.moeStudents,g));
+  renderMoeList(s.moeStudents,0);
+}
+function renderMoeList(list,g){
+  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  document.getElementById('moe-tbody').innerHTML=f.map(x=>`<tr>
+    <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
+    <td style="font-weight:600">${esc(x['姓名']||'')}</td>
+    <td><span class="badge" style="background:var(--accent-bg);color:var(--accent)">${esc(x.moeType)}</span></td>
+    <td style="font-size:.78rem">${esc(x.moeItems)}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green)">${money(x.moeAmt)}</td>
+  </tr>`).join('');
+}
+
+/* ── BOOK ── */
+function renderBook(s){
+  document.getElementById('book-total-lbl').textContent=`— 共 ${s.bookCount} 人 ${money(s.bookTotal)}`;
+  const cats=['身心障礙學生/家長子女','低收入戶學生','中低收入單親家庭學生','原住民籍學生','功勳及公教遺族'];
+  const matrix={};
+  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
+  s.bookStudents.forEach(x=>{
+    const g=grade(x['班級']||'');
+    if(matrix[x.bookType]&&g){matrix[x.bookType][g]++;matrix[x.bookType].total++;matrix[x.bookType].amt+=x.bookAmt;}
+  });
+  buildMatrix('book-matrix',cats,matrix,s.bookTotal,'#fff7ed','#c05621');
+  buildGradeFilter('book-gf','book',(g)=>renderBookList(s.bookStudents,g));
+  renderBookList(s.bookStudents,0);
+}
+function renderBookList(list,g){
+  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  document.getElementById('book-tbody').innerHTML=f.map(x=>`<tr>
+    <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
+    <td style="font-weight:600">${esc(x['姓名']||'')}</td>
+    <td style="font-size:.77rem;font-weight:600;color:var(--orange)">${esc(x.bookType)}</td>
+    <td style="font-size:.75rem;color:var(--text2)">${esc(x.optimalType||x['最優補助身分']||'')}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green)">${money(x.bookAmt)}</td>
+  </tr>`).join('');
+}
+
+/* ── NOTE ── */
+function renderNote(s){
+  document.getElementById('note-total-lbl').textContent=`— 共 ${s.noteCount} 人 ${money(s.noteTotal)}`;
+  const cats=['中低收入戶','導師認定'];
+  const matrix={};
+  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
+  s.noteStudents.forEach(x=>{
+    const g=grade(x['班級']||'');
+    if(matrix[x.noteType]&&g){matrix[x.noteType][g]++;matrix[x.noteType].total++;matrix[x.noteType].amt+=200;}
+  });
+  buildMatrix('note-matrix',cats,matrix,s.noteTotal,'#f5f3ff','var(--purple)');
+  buildGradeFilter('note-gf','note',(g)=>renderNoteList(s.noteStudents,g));
+  renderNoteList(s.noteStudents,0);
+}
+function renderNoteList(list,g){
+  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  document.getElementById('note-tbody').innerHTML=f.map(x=>`<tr>
+    <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
+    <td style="font-weight:600">${esc(x['姓名']||'')}</td>
+    <td>${esc(x.optimalType||x['最優補助身分']||'')}</td>
+    <td style="font-size:.77rem;color:var(--purple);font-weight:600">${esc(x.noteType)}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green)">$200</td>
+  </tr>`).join('');
+}
+
+/* ── INDIGENOUS ── */
+function renderIndig(s){
+  document.getElementById('indig-total-lbl').textContent=`— 共 ${s.indigStudents.length} 人`;
+  const tribeCounts={};
+  s.indigStudents.forEach(x=>{if(!tribeCounts[x.tribe])tribeCounts[x.tribe]=0;tribeCounts[x.tribe]++;});
+  const sorted=Object.entries(tribeCounts).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0]?.[1]||1;
+  document.getElementById('tribe-bars').innerHTML=sorted.map(([t,n])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="width:100px;font-size:.82rem;font-weight:600">${esc(t)}</span>
+      <div style="flex:1;height:9px;border-radius:5px;background:var(--teal-bg)">
+        <div style="height:100%;border-radius:5px;background:var(--teal);width:${Math.round(n/max*100)}%;opacity:.7"></div>
+      </div>
+      <span style="font-weight:700;color:var(--teal);width:36px;text-align:right">${n}</span>
+    </div>`).join('');
+  buildGradeFilter('indig-gf','indig',(g)=>renderIndigList(s.indigStudents,g));
+  renderIndigList(s.indigStudents,0);
+}
+function renderIndigList(list,g){
+  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  document.getElementById('indig-tbody').innerHTML=f.map(x=>`<tr>
+    <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
+    <td style="font-weight:600">${esc(x['姓名']||'')}</td>
+    <td><span class="badge" style="background:var(--teal-bg);color:var(--teal)">${esc(x.tribe)}</span></td>
+    <td style="font-size:.74rem;color:var(--text2)">${esc(x['9.原民生']||x['10.原民清寒(原)']||'')}</td>
+  </tr>`).join('');
+}
+
+/* ── CROSS ANALYSIS ── */
+function renderCross(){
+  const cats=SUBSIDY_COLS;
+  const classes=[...new Set(allStudents.map(s=>s['班級']||''))].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  const matrix={};
+  cats.forEach(c=>{matrix[c]={};classes.forEach(cls=>{matrix[c][cls]=0;});matrix[c].total=0;});
+  allStudents.forEach(s=>{
+    const cls=s['班級']||'';
+    SUBSIDY_COLS.forEach(col=>{
+      if(String(s[col]||'').trim()){if(matrix[col])matrix[col][cls]=(matrix[col][cls]||0)+1;if(matrix[col])matrix[col].total++;}
+    });
+  });
+  const tbl=document.getElementById('cross-table');
+  let h=`<thead><tr><th>補助類別</th>${classes.map(c=>`<th>${esc(c)}</th>`).join('')}<th style="background:#eff6ff;color:var(--accent)">合計</th></tr></thead><tbody>`;
+  cats.forEach(cat=>{
+    const row=matrix[cat];
+    const clr=CAT_COLORS[cat]||{bg:'#f0f0f0',tx:'#333'};
+    h+=`<tr><td style="font-weight:600;color:${clr.tx};background:${clr.bg}">${esc(cat)}</td>`;
+    classes.forEach(cls=>{const v=row[cls]||0;h+=`<td>${v?`<span style="font-weight:700">${v}</span>`:'<span class="zero">—</span>'}</td>`;});
+    h+=`<td style="font-weight:700;background:#eff6ff;color:var(--accent)">${row.total}</td></tr>`;
+  });
+  h+='</tbody>';
+  tbl.innerHTML=h;
+}
+
+/* ── HELPERS ── */
+function buildMatrix(id,cats,matrix,total,totBg,totTx){
+  let h=`<thead><tr><th>補助類別</th>${[1,2,3,4,5,6].map(g=>`<th>${g}年級</th>`).join('')}<th style="background:${totBg};color:${totTx}">合計</th><th style="background:${totBg};color:${totTx}">金額</th></tr></thead><tbody>`;
+  let grandCnt=0,grandAmt=0;
+  cats.forEach(cat=>{
+    const r=matrix[cat]||{};
+    h+=`<tr><td style="font-weight:600">${esc(cat)}</td>`;
+    for(let g=1;g<=6;g++){const v=r[g]||0;h+=`<td>${v?`<b>${v}</b>`:'<span class="zero">—</span>'}</td>`;}
+    h+=`<td style="font-weight:700;background:${totBg};color:${totTx}">${r.total||0}</td>
+        <td class="amt-col">${money(r.amt||0)}</td></tr>`;
+    grandCnt+=r.total||0;grandAmt+=r.amt||0;
+  });
+  h+=`<tr class="ttl-row"><td>合計</td>${[1,2,3,4,5,6].map(g=>{
+    const v=cats.reduce((a,c)=>(matrix[c]||{})[g]?(a+(matrix[c][g]||0)):a,0);
+    return `<td>${v||'—'}</td>`;
+  }).join('')}<td>${grandCnt}</td><td class="amt-col">${money(grandAmt)}</td></tr></tbody>`;
+  document.getElementById(id).innerHTML=h;
+}
+
+function buildGradeFilter(id,prefix,onFilter){
+  const gradeCounts={0:allStudents.length};
+  for(let g=1;g<=6;g++)gradeCounts[g]=allStudents.filter(s=>grade(s['班級']||'')==g).length;
+  let cur=0;
+  const el=document.getElementById(id);
+  el.innerHTML=[0,1,2,3,4,5,6].map(g=>
+    `<button class="gf-btn${g===0?' on':''}" data-g="${g}">${g===0?'全部':g+'年級'} (${gradeCounts[g]||0})</button>`
+  ).join('');
+  el.querySelectorAll('.gf-btn').forEach(b=>{
+    b.onclick=()=>{
+      cur=parseInt(b.dataset.g);
+      el.querySelectorAll('.gf-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      onFilter(cur);
+    };
+  });
+}
+
+/* ── BOOK FEES ── */
+function buildFeeGrid(){
+  document.getElementById('fee-grid').innerHTML=[1,2,3,4,5,6].map(g=>`
+    <div class="fee-item">
+      <label>${g}年級</label>
+      <input type="number" id="fee-${g}" value="${bookFees[g]||0}">
+    </div>`).join('');
+}
+function buildFeeExplain(){
+  const rows=[
+    ['1.低收(社)','課本 $600','（教育部補助）','$200'],
+    ['2.中低收(社)','課本 $600 + 保險 $233 = $833','（教育部補助）','$200'],
+    ['3.單親(社)','—','—','—'],
+    ['4/5.身障(社)','—','各年級書價','—'],
+    ['6/7.身障(一般)','—','各年級書價','—'],
+    ['8.重身障(學)','—','各年級書價','—'],
+    ['9.原民生','—','各年級書價','—'],
+    ['10.原民清寒','—','—（教育部管）','—'],
+    ['11.功勳','—','各年級書價','—'],
+    ['12.導師認定','課本 $600 + 保險 $233 = $833','—','$200'],
+  ];
+  document.getElementById('fee-explain').innerHTML=rows.map(r=>`<tr>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600">${esc(r[0])}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:.8rem">${esc(r[1])}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:.8rem">${esc(r[2])}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:.8rem">${esc(r[3])}</td>
+  </tr>`).join('');
+}
+async function saveFees(){
+  for(let g=1;g<=6;g++){
+    const v=parseInt(document.getElementById(`fee-${g}`).value)||0;
+    bookFees[g]=v;
+  }
+  await setDoc(doc(db,'settings','bookFees'),{...bookFees,updatedAt:serverTimestamp()});
+  const ok=document.getElementById('fee-saved');
+  ok.style.display='inline';
+  setTimeout(()=>ok.style.display='none',2500);
+  renderAll();
+}
+</script>
+</body>
+</html>
