@@ -120,12 +120,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .p-special-note{font-weight:bold;margin-top:3px;}
 
   .p-ref-label{font-weight:bold;font-size:9pt;margin-bottom:2mm;}
-  .p-ref-table{width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:4mm;}
+  /* ★ 修正：table 本身加 border，確保四邊都有框線 */
+  .p-ref-table{width:100%;border-collapse:collapse;border:1px solid #000;font-size:8pt;margin-bottom:4mm;}
   .p-ref-table th,.p-ref-table td{border:1px solid #000;padding:2px 4px;vertical-align:top;text-align:left;}
   .p-ref-table th{background:#e8e8e8;font-weight:bold;text-align:center;}
 
   .p-class-label{font-weight:bold;font-size:11pt;margin-bottom:2mm;}
-  .p-main-table{width:100%;border-collapse:collapse;font-size:9.5pt;border:2px solid #000;}
+  /* ★ 修正：table 本身加 border */
+  .p-main-table{width:100%;border-collapse:collapse;border:2px solid #000;font-size:9.5pt;}
   .p-main-table th,.p-main-table td{border:1px solid #000;padding:5px 6px;vertical-align:middle;}
   .p-main-table th{background:#d8d8d8;font-weight:bold;text-align:center;}
   .p-main-table td:first-child{text-align:center;width:8%;}
@@ -142,7 +144,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .print-area{display:none;}
 .screen-preview .p-header{font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:10px;font-family:'Noto Serif TC',serif;}
 .screen-preview .p-instruction{border:1px solid #999;padding:10px;margin-bottom:10px;font-size:.82rem;line-height:1.6;border-radius:4px;}
-.screen-preview .p-ref-table{width:100%;border-collapse:collapse;font-size:.75rem;margin-bottom:10px;}
+.screen-preview .p-ref-table{width:100%;border-collapse:collapse;border:1px solid #aaa;font-size:.75rem;margin-bottom:10px;}
 .screen-preview .p-ref-table th,.screen-preview .p-ref-table td{border:1px solid #aaa;padding:3px 6px;text-align:left;}
 .screen-preview .p-ref-table th{background:#e8e8e8;font-weight:700;text-align:center;}
 .screen-preview .p-class-label{font-weight:700;font-size:.9rem;margin-bottom:6px;}
@@ -340,6 +342,54 @@ async function initApp(){
   const av=document.getElementById('uavatar');
   av.innerHTML=cUser.photoURL?`<img src="${esc(cUser.photoURL)}" alt="">`:esc(name.charAt(0).toUpperCase());
 
+  // ★ Load saved print config from Firestore
+  try{
+    const cfgSnap=await getDoc(doc(db,'settings','printConfig'));
+    if(cfgSnap.exists()){
+      const c=cfgSnap.data();
+      if(c.year)    document.getElementById('cfg-year').value=c.year;
+      if(c.sem){
+        const s=document.getElementById('cfg-sem');
+        [...s.options].forEach(o=>{if(o.value===c.sem)o.selected=true;});
+      }
+      if(c.deadline)     document.getElementById('cfg-deadline').value=c.deadline;
+      if(c.ext)          document.getElementById('cfg-ext').value=c.ext;
+      if(c.instructions) document.getElementById('cfg-instructions').value=c.instructions;
+      if(c.col4!==undefined) document.getElementById('cfg-col4').value=c.col4;
+      if(c.col5!==undefined) document.getElementById('cfg-col5').value=c.col5;
+      if(c.showRef!==undefined)    document.getElementById('cfg-ref').checked=c.showRef;
+      if(c.showFooter!==undefined) document.getElementById('cfg-footer').checked=c.showFooter;
+    }
+  }catch(e){console.warn('Config load:',e);}
+
+  // ★ Auto-save config to Firestore on any change (debounced)
+  let saveTimer=null;
+  const autoSave=()=>{
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(async()=>{
+      try{
+        await setDoc(doc(db,'settings','printConfig'),{
+          year:   document.getElementById('cfg-year').value,
+          sem:    document.getElementById('cfg-sem').value,
+          deadline: document.getElementById('cfg-deadline').value,
+          ext:    document.getElementById('cfg-ext').value,
+          instructions: document.getElementById('cfg-instructions').value,
+          col4:   document.getElementById('cfg-col4').value,
+          col5:   document.getElementById('cfg-col5').value,
+          showRef:    document.getElementById('cfg-ref').checked,
+          showFooter: document.getElementById('cfg-footer').checked,
+          updatedAt:  serverTimestamp()
+        });
+      }catch(e){console.warn('Config save:',e);}
+    },1200);
+  };
+  ['cfg-year','cfg-sem','cfg-deadline','cfg-ext','cfg-instructions','cfg-col4','cfg-col5','cfg-ref','cfg-footer']
+    .forEach(id=>document.getElementById(id).addEventListener('change',autoSave));
+  document.getElementById('cfg-instructions').addEventListener('input',autoSave);
+  document.getElementById('cfg-year').addEventListener('input',autoSave);
+  document.getElementById('cfg-deadline').addEventListener('input',autoSave);
+  document.getElementById('cfg-ext').addEventListener('input',autoSave);
+
   const tSnap=await getDocs(collection(db,'termsMeta'));
   const terms=tSnap.docs.map(d=>d.id).sort();
   if(!terms.length){
@@ -364,7 +414,11 @@ async function loadData(){
   document.getElementById('preview-section').style.display='none';
   try{
     const snap=await getDocs(collection(db,`terms/${currentTerm}/students`));
-    allStudents=snap.docs.map(d=>d.data());
+    // ★ 強制將班級轉成字串，避免數字型態造成比對失敗
+    allStudents=snap.docs.map(d=>{
+      const data=d.data();
+      return {...data, '班級':String(data['班級']||'').trim()};
+    });
     buildClassButtons();
     document.getElementById('app-loading').style.display='none';
     document.getElementById('app-content').style.display='block';
@@ -375,7 +429,9 @@ async function loadData(){
 
 /* ── CLASS BUTTONS ── */
 function buildClassButtons(){
-  const classes=[...new Set(allStudents.map(s=>s['班級']||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  // ★ 全部班級都用字串，再用數字排序
+  const classes=[...new Set(allStudents.map(s=>String(s['班級']||'').trim()).filter(Boolean))]
+    .sort((a,b)=>Number(a)-Number(b));
   const container=document.getElementById('class-btns');
   // Group by grade
   const byGrade={};
@@ -451,8 +507,9 @@ const REF_TABLE=[
 
 /* ── BUILD ONE CLASS HTML ── */
 function buildClassHTML(cls, cfg, isScreen=false){
+  // ★ 用字串比對，避免數字型態的班級被漏掉
   const students=allStudents
-    .filter(s=>s['班級']===cls)
+    .filter(s=>String(s['班級']||'').trim()===String(cls).trim())
     .sort((a,b)=>Number(a['座號']||0)-Number(b['座號']||0));
 
   const tableClass=isScreen?'p-main-table':'p-main-table';
@@ -529,7 +586,8 @@ function buildClassHTML(cls, cfg, isScreen=false){
 function doPreview(){
   if(!selectedClasses.size){alert('請先選擇班級');return;}
   const cfg=getCfg();
-  const classes=[...selectedClasses].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  // ★ 數字排序
+  const classes=[...selectedClasses].sort((a,b)=>Number(a)-Number(b));
   let html='';
   classes.forEach((cls,i)=>{
     if(i>0) html+=`<div class="cls-separator">── 下一班：${esc(cls)} ──</div>`;
@@ -544,7 +602,8 @@ function doPreview(){
 function doPrint(){
   if(!selectedClasses.size){alert('請先選擇班級');return;}
   const cfg=getCfg();
-  const classes=[...selectedClasses].sort((a,b)=>a.localeCompare(b,'zh-TW'));
+  // ★ 數字排序
+  const classes=[...selectedClasses].sort((a,b)=>Number(a)-Number(b));
   let html='';
   classes.forEach((cls,i)=>{
     const isLast=i===classes.length-1;
