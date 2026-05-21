@@ -154,6 +154,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .screen-preview .p-footer{text-align:right;font-size:.85rem;font-weight:700;margin-top:12px;padding-top:8px;border-top:1px solid #aaa;}
 .cls-separator{border-top:3px dashed #ccc;margin:20px 0;padding-top:4px;font-size:.72rem;color:#999;text-align:center;}
 
+.cls-btn.empty{
+  background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0;font-style:italic;
+}
+.cls-btn.empty:hover{border-color:#93c5fd;color:#64748b;background:#f8fafc;}
+.cls-btn.empty.on{background:#dbeafe;color:var(--accent);border-color:var(--accent);}
+
+.grade-inp-wrap{text-align:center;}
+.grade-inp-wrap label{font-size:.72rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;}
+.grade-inp-wrap input{width:100%;padding:7px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:1rem;font-weight:700;text-align:center;outline:none;transition:border-color .15s;}
+.grade-inp-wrap input:focus{border-color:var(--accent);}
+
 @media(max-width:768px){.setting-grid{grid-template-columns:1fr;}.ctrl-panel{padding:12px;}}
 </style>
 </head>
@@ -254,9 +266,34 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
       </div>
 
-      <!-- 2. 選擇班級 -->
+      <!-- 2. 班級設定 -->
       <div class="card">
-        <div class="card-title">📋 選擇列印班級</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none"
+             id="cls-cfg-toggle" onclick="toggleClsCfg()">
+          <div class="card-title" style="margin:0">🏫 班級設定（每年級班數）</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:.77rem;color:var(--text2)" id="cls-cfg-summary">載入中...</span>
+            <span style="font-size:.78rem;color:var(--text3)" id="cls-cfg-arrow">▼ 展開</span>
+          </div>
+        </div>
+        <div id="cls-cfg-body" style="display:none;margin-top:14px">
+          <p style="font-size:.8rem;color:var(--text2);margin-bottom:12px;line-height:1.6">
+            設定每年級有幾班，系統會自動補全沒有補助學生的班級（灰色按鈕），確保每班都能印出通知單。
+          </p>
+          <div id="cls-grade-inputs" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px"></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn-primary" id="btn-save-cls-cfg" style="padding:8px 16px;font-size:.84rem">💾 儲存班級設定</button>
+            <span id="cls-cfg-saved" style="font-size:.79rem;color:var(--green);display:none">✅ 已儲存</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 選擇班級 -->
+      <div class="card">
+        <div class="card-title">📋 選擇列印班級
+          <span style="font-weight:400;font-size:.77rem;color:var(--text2)">— 灰色按鈕為無補助學生的班級</span>
+        </div>
+        <div id="empty-cls-notice" class="alert aw" style="display:none;margin-bottom:10px"></div>
         <div class="class-select-grid" id="class-btns"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
           <button class="btn-primary" id="btn-print">🖨️ 列印選取班級</button>
@@ -301,6 +338,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
 
 let cUser=null, cDoc=null, currentTerm='', allStudents=[], selectedClasses=new Set();
+let classConfig={1:6,2:6,3:7,4:9,5:8,6:8}; // 每年級班數預設值，會從 Firestore 覆蓋
 
 /* ── AUTH ── */
 document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
@@ -404,6 +442,20 @@ async function initApp(){
   document.getElementById('btn-print').onclick=doPrint;
   document.getElementById('btn-preview').onclick=doPreview;
 
+  // ★ Load class config from Firestore
+  try{
+    const ccSnap=await getDoc(doc(db,'settings','classConfig'));
+    if(ccSnap.exists()){
+      const d=ccSnap.data();
+      for(let g=1;g<=6;g++) if(d[g]!==undefined) classConfig[g]=d[g];
+    }
+  }catch(e){console.warn('classConfig load:',e);}
+
+  // Build grade inputs
+  buildGradeInputs();
+  document.getElementById('btn-save-cls-cfg').onclick=saveClassConfig;
+  updateClsCfgSummary();
+
   await loadData();
 }
 
@@ -427,15 +479,80 @@ async function loadData(){
   }
 }
 
+/* ── CLASS CONFIG ── */
+function buildGradeInputs(){
+  const el=document.getElementById('cls-grade-inputs');
+  el.innerHTML=[1,2,3,4,5,6].map(g=>`
+    <div class="grade-inp-wrap">
+      <label>${g} 年級</label>
+      <input type="number" id="gcfg-${g}" min="1" max="20" value="${classConfig[g]||6}">
+    </div>`).join('');
+}
+
+async function saveClassConfig(){
+  const cfg={};
+  for(let g=1;g<=6;g++){
+    cfg[g]=parseInt(document.getElementById(`gcfg-${g}`).value)||6;
+    classConfig[g]=cfg[g];
+  }
+  await setDoc(doc(db,'settings','classConfig'),{...cfg,updatedAt:serverTimestamp()});
+  const ok=document.getElementById('cls-cfg-saved');
+  ok.style.display='inline';setTimeout(()=>ok.style.display='none',2500);
+  updateClsCfgSummary();
+  buildClassButtons(); // Rebuild with new config
+}
+
+function updateClsCfgSummary(){
+  const parts=[1,2,3,4,5,6].map(g=>`${g}年${classConfig[g]||6}班`).join('、');
+  document.getElementById('cls-cfg-summary').textContent=parts;
+}
+
+window.toggleClsCfg=function(){
+  const body=document.getElementById('cls-cfg-body');
+  const arrow=document.getElementById('cls-cfg-arrow');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  arrow.textContent=open?'▲ 收合':'▼ 展開';
+};
+
+/* ── Generate full class list from config ── */
+function getAllClasses(){
+  const list=[];
+  for(let g=1;g<=6;g++){
+    const count=classConfig[g]||0;
+    for(let b=1;b<=count;b++) list.push(`${g}0${b}`); // e.g. 101, 102...
+  }
+  return list;
+}
+
 /* ── CLASS BUTTONS ── */
 function buildClassButtons(){
-  // ★ 全部班級都用字串，再用數字排序
-  const classes=[...new Set(allStudents.map(s=>String(s['班級']||'').trim()).filter(Boolean))]
-    .sort((a,b)=>Number(a)-Number(b));
+  // ★ 從 Firestore 資料取得有資料的班級
+  const hasDataClasses=new Set(
+    allStudents.map(s=>String(s['班級']||'').trim()).filter(Boolean)
+  );
+
+  // ★ 從班級設定產生完整班級列表
+  const allConfigClasses=getAllClasses();
+
+  // ★ 找出設定中有但 Firestore 沒有資料的班級
+  const emptyClasses=allConfigClasses.filter(c=>!hasDataClasses.has(c));
+
+  // 合併：設定中所有班級 + 資料中有但設定外的班級，統一排序
+  const allClasses=[...new Set([...allConfigClasses,...hasDataClasses])].sort((a,b)=>Number(a)-Number(b));
+
+  // 更新空班級提示
+  const notice=document.getElementById('empty-cls-notice');
+  if(emptyClasses.length){
+    notice.style.display='block';
+    notice.textContent=`⚠️ 以下班級無補助學生（灰色）：${emptyClasses.join('、')} — 列印時將印出空白名單`;
+  } else {
+    notice.style.display='none';
+  }
+
   const container=document.getElementById('class-btns');
-  // Group by grade
   const byGrade={};
-  classes.forEach(cls=>{
+  allClasses.forEach(cls=>{
     const g=cls.match(/^(\d)/)?cls[0]:'?';
     if(!byGrade[g])byGrade[g]=[];
     byGrade[g].push(cls);
@@ -444,7 +561,12 @@ function buildClassButtons(){
   let html=`<button class="cls-btn all-btn" id="btn-all-cls">全選</button>`;
   Object.entries(byGrade).sort().forEach(([g,cls])=>{
     html+=`<span style="font-size:.72rem;font-weight:700;color:var(--text3);padding:6px 2px 0;align-self:flex-end">${g}年</span>`;
-    cls.forEach(c=>{html+=`<button class="cls-btn" data-cls="${esc(c)}">${esc(c)}</button>`;});
+    cls.forEach(c=>{
+      const isEmpty=!hasDataClasses.has(c);
+      const isOn=selectedClasses.has(c);
+      html+=`<button class="cls-btn${isEmpty?' empty':''}${isOn?' on':''}" data-cls="${esc(c)}"
+        title="${isEmpty?'無補助學生，列印空白名單':c+'班'}">${esc(c)}</button>`;
+    });
   });
   container.innerHTML=html;
 
@@ -512,9 +634,9 @@ function buildClassHTML(cls, cfg, isScreen=false){
     .filter(s=>String(s['班級']||'').trim()===String(cls).trim())
     .sort((a,b)=>Number(a['座號']||0)-Number(b['座號']||0));
 
-  const tableClass=isScreen?'p-main-table':'p-main-table';
+  const isEmpty=students.length===0;
 
-  // Title
+  // Title — 空白班級加標注
   let html=`<div class="p-header">${esc(cfg.year)}學年度 ${esc(cfg.sem)} 減免申請調查表(${esc(cls)})</div>`;
 
   // Instructions
@@ -538,8 +660,10 @@ function buildClassHTML(cls, cfg, isScreen=false){
   }
 
   // Student table
+  const emptyNote=isEmpty?`<div style="font-size:9pt;color:#666;margin-bottom:2mm;">（本班本學期系統中無補助學生，若有異動請導師於下方補填）</div>`:'';
   html+=`<div class="p-class-label">表2 — ${esc(cls)} 班級確認名單</div>
-  <table class="${tableClass}">
+  ${emptyNote}
+  <table class="p-main-table">
     <thead><tr>
       <th style="width:8%;text-align:center">座號</th>
       <th style="width:12%;text-align:center">姓名</th>
@@ -569,10 +693,12 @@ function buildClassHTML(cls, cfg, isScreen=false){
     </tr>`;
   });
 
-  // 2 empty rows
-  html+=`<tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>
-         <tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>
-    </tbody></table>`;
+  // ★ 空班級印5行空白，有資料的班級印2行
+  const emptyRowCount = isEmpty ? 5 : 2;
+  for(let i=0;i<emptyRowCount;i++){
+    html+=`<tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>`;
+  }
+  html+=`</tbody></table>`;
 
   // Footer signature
   if(cfg.showFooter){
