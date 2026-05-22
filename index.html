@@ -249,7 +249,28 @@ td.idno-cell { font-size:.74rem; color:var(--text3);
   font-family:'JetBrains Mono',monospace; overflow:hidden; text-overflow:ellipsis; }
 td.idno-cell.xp { color:var(--text) !important; }
 
-/* IMPORT */
+/* DELETE CELL in edit mode */
+td.del-cell {
+  cursor:pointer; text-align:center; padding:4px !important;
+  background:#fff5f5 !important;
+  transition:background .15s;
+}
+td.del-cell:hover { background:var(--red-bg) !important; }
+.del-btn { font-size:.85rem; opacity:.6; pointer-events:none; }
+td.del-cell:hover .del-btn { opacity:1; }
+
+/* ADD STUDENT button */
+.btn-add { 
+  display:none; align-items:center; gap:5px;
+  padding:7px 13px; background:var(--green-bg); color:var(--green);
+  border:1.5px solid var(--green-bd); border-radius:6px;
+  cursor:pointer; font-size:.79rem; font-weight:600; font-family:inherit;
+  transition:all .15s;
+}
+.btn-add:hover { background:#dcfce7; }
+
+/* ADD modal input focus */
+#add-ov input:focus, #add-ov select:focus { border-color:var(--accent) !important; }
 .uzone{border:2px dashed var(--border);border-radius:var(--radius);
   padding:30px 20px;text-align:center;cursor:pointer;background:var(--surface2);
   transition:border-color .2s,background .2s;}
@@ -422,6 +443,7 @@ td.idno-cell.xp { color:var(--text) !important; }
         <button class="btn-sm" id="btn-expand-all" title="自動調整所有欄位到最適寬度（同 Excel 雙擊欄框）">⇔ 自動欄寬</button>
         <button class="btn-sm" id="btn-reset-widths" title="還原預設欄寬">↺ 還原</button>
         <div id="edit-ctrl" style="display:none;align-items:center;gap:6px;margin-left:auto">
+          <button class="btn-exp" id="btn-add-student" style="background:var(--green);gap:5px;display:none">➕ 新增學生</button>
           <div class="edit-ind" id="edit-ind"><span class="edot"></span>編輯模式</div>
           <button class="btn-edit" id="btn-edit">✏️ 開始編輯</button>
         </div>
@@ -577,6 +599,94 @@ td.idno-cell.xp { color:var(--text) !important; }
   </div>
 </div>
 
+<!-- MODAL: 刪除確認 -->
+<div class="ov" id="del-ov">
+  <div class="modal">
+    <div class="mttl">🗑️ 刪除學生資料</div>
+    <div class="mdesc" id="del-desc">確定要刪除這筆資料嗎？此操作無法復原。</div>
+    <div style="background:var(--red-bg);border:1px solid var(--red-bd);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
+      <div id="del-student-info" style="font-weight:600;color:var(--red);margin-bottom:6px"></div>
+      <div style="color:var(--text2)">請輸入「<strong>確認刪除</strong>」以確認操作：</div>
+    </div>
+    <input type="text" id="del-confirm-inp" placeholder="輸入「確認刪除」" autocomplete="off"
+      style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;
+      font-family:inherit;font-size:.9rem;outline:none;margin-bottom:8px;transition:border-color .15s">
+    <div id="del-err" style="color:var(--red);font-size:.77rem;margin-bottom:8px;display:none">請輸入正確的確認文字</div>
+    <div class="mbtns">
+      <button class="btn-sm" onclick="cov('del-ov');document.getElementById('del-confirm-inp').value=''">取消</button>
+      <button class="btn-ds" id="btn-del-ok">🗑️ 確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 新增學生 -->
+<div class="ov" id="add-ov">
+  <div class="modal" style="width:520px;max-width:95vw">
+    <div class="mttl">➕ 新增學生資料</div>
+    <div class="mdesc">填寫後按確認新增，資料將直接存入目前學期（<span id="add-term-label">—</span>）。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">班級 <span style="color:var(--red)">*</span></label>
+        <input type="text" id="add-cls" placeholder="如：101" maxlength="6"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;outline:none">
+      </div>
+      <div>
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">座號 <span style="color:var(--red)">*</span></label>
+        <input type="text" id="add-seat" placeholder="如：12"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;outline:none">
+      </div>
+      <div>
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">姓名 <span style="color:var(--red)">*</span></label>
+        <input type="text" id="add-name" placeholder="學生姓名"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;outline:none">
+      </div>
+      <div>
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">性別</label>
+        <select id="add-sex"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;background:#fff;outline:none">
+          <option value="">未填</option>
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </div>
+      <div style="grid-column:span 2">
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">身分證號</label>
+        <input type="text" id="add-idno" placeholder="身分證號（選填）" maxlength="12"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;outline:none">
+      </div>
+      <div style="grid-column:span 2">
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">最優補助身分</label>
+        <select id="add-opt"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;background:#fff;outline:none">
+          <option value="無">無</option>
+          <option value="1.低收(社)">1.低收(社)</option>
+          <option value="2.中低收(社)">2.中低收(社)</option>
+          <option value="3.單親(社)">3.單親(社)</option>
+          <option value="4.身障(學)(社)">4.身障(學)(社)</option>
+          <option value="5.身障(家)(社)">5.身障(家)(社)</option>
+          <option value="6.身障(學)">6.身障(學)</option>
+          <option value="7.身障(家)">7.身障(家)</option>
+          <option value="8.重身障(學)">8.重身障(學)</option>
+          <option value="9.原民生">9.原民生</option>
+          <option value="10.原民清寒(原)">10.原民清寒(原)</option>
+          <option value="11.功勳">11.功勳</option>
+          <option value="12.導師認定">12.導師認定</option>
+        </select>
+      </div>
+      <div style="grid-column:span 2">
+        <label style="font-size:.74rem;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">兄弟姊妹（選填）</label>
+        <input type="text" id="add-sib" placeholder="如：10203王小明"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;outline:none">
+      </div>
+    </div>
+    <div id="add-err" style="color:var(--red);font-size:.78rem;margin-bottom:8px;display:none"></div>
+    <div class="mbtns">
+      <button class="btn-sm" onclick="cov('add-ov');clearAddForm()">取消</button>
+      <button class="btn-p" id="btn-add-ok">➕ 新增</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
@@ -678,6 +788,7 @@ async function initApp(){
     document.getElementById('stab-import').style.display='';
     document.getElementById('stab-promote').style.display='';
     document.getElementById('edit-ctrl').style.display='flex';
+    document.getElementById('btn-add-student').style.display='inline-flex';
   }
 
   document.querySelectorAll('.stab').forEach(b=>{
@@ -695,17 +806,17 @@ async function initApp(){
   document.getElementById('btn-exp-a').onclick=()=>doExport(all,'全部');
   document.getElementById('btn-exp-f').onclick=()=>doExport(filt,sCats.size?[...sCats].join('、'):'全部');
   document.getElementById('btn-edit').onclick=toggleEdit;
-  document.getElementById('btn-expand-all').onclick=()=>{
-    autoFitColumns();
-  };
+  document.getElementById('btn-expand-all').onclick=()=>{ autoFitColumns(); };
   document.getElementById('btn-reset-widths').onclick=()=>{
     colWidths={...DEFAULT_WIDTHS};
     expandedCols.clear(); allExpanded=false;
     renderTable();
   };
+  document.getElementById('btn-add-student').onclick=openAddModal;
 
   setupImport();
   setupPromote();
+  setupDeleteAdd();
   await loadTerms();
   await loadData();
 }
@@ -976,7 +1087,12 @@ function renderTable(){
       return `<td class="${cls}" data-ci="${ci}">${v}</td>`;
     };
 
-    const seqCell=`<td class="tseq" data-ci="0">${i+1}</td>`;
+    const seqCell = editOn
+      ? `<td class="tseq del-cell" data-ci="0" title="刪除此筆資料"
+           onclick="askDelete('${escA(s._docId)}','${escA(s['班級']||'')}','${escA(String(s['座號']||''))}','${escA(s['姓名']||'')}')">
+           <span class="del-btn">🗑</span>
+         </td>`
+      : `<td class="tseq" data-ci="0">${i+1}</td>`;
 
     const idRaw=ch['身分證號']!==undefined?ch['身分證號']:(s['身分證號']??'');
     const idXp=isXp(5)?' xp':'';
@@ -1195,6 +1311,139 @@ function exitEdit(saved){
 
 window.cov=id=>document.getElementById(id).classList.remove('open');
 document.querySelectorAll('.ov').forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove('open');});
+
+/* ══════════════════════════════
+   DELETE + ADD
+══════════════════════════════ */
+let _delDocId=null;
+
+function setupDeleteAdd(){
+  // Delete confirm
+  const delInp=document.getElementById('del-confirm-inp');
+  delInp.oninput=()=>{
+    document.getElementById('del-err').style.display='none';
+    document.getElementById('btn-del-ok').disabled=false;
+  };
+  delInp.onkeydown=e=>{if(e.key==='Enter')document.getElementById('btn-del-ok').click();};
+
+  document.getElementById('btn-del-ok').onclick=async()=>{
+    const val=document.getElementById('del-confirm-inp').value.trim();
+    if(val!=='確認刪除'){
+      document.getElementById('del-err').style.display='block';
+      document.getElementById('del-confirm-inp').focus();
+      return;
+    }
+    if(!_delDocId)return;
+    try{
+      const s=all.find(x=>x._docId===_delDocId);
+      await deleteDoc(doc(sCol(term),_delDocId));
+      // Log deletion
+      await addDoc(collection(db,'editLogs'),{
+        editedBy:cUser.uid,
+        editorName:cDoc.customName||cUser.displayName||cUser.email,
+        term, timestamp:serverTimestamp(),
+        changes:[{
+          docId:_delDocId,
+          name:s?.['姓名']||'?',
+          cls:s?.['班級']||'?',
+          action:'delete',
+          fields:[]
+        }]
+      });
+      cov('del-ov');
+      document.getElementById('del-confirm-inp').value='';
+      _delDocId=null;
+      await loadData();
+    }catch(e){alert('刪除失敗：'+e.message);}
+  };
+
+  // Add student
+  document.getElementById('btn-add-ok').onclick=doAddStudent;
+  ['add-cls','add-name'].forEach(id=>{
+    document.getElementById(id).onkeydown=e=>{if(e.key==='Enter')document.getElementById('btn-add-ok').click();};
+  });
+}
+
+window.askDelete=function(docId, cls, seat, name){
+  _delDocId=docId;
+  document.getElementById('del-student-info').textContent=`${cls} ${seat}號 ${name}`;
+  document.getElementById('del-confirm-inp').value='';
+  document.getElementById('del-err').style.display='none';
+  document.getElementById('del-ov').classList.add('open');
+  setTimeout(()=>document.getElementById('del-confirm-inp').focus(),80);
+};
+
+function openAddModal(){
+  document.getElementById('add-term-label').textContent=tLabel(term);
+  clearAddForm();
+  document.getElementById('add-ov').classList.add('open');
+  setTimeout(()=>document.getElementById('add-cls').focus(),80);
+}
+
+window.clearAddForm=function(){
+  ['add-cls','add-seat','add-name','add-idno','add-sib'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('add-sex').value='';
+  document.getElementById('add-opt').value='無';
+  document.getElementById('add-err').style.display='none';
+};
+
+async function doAddStudent(){
+  const cls  = document.getElementById('add-cls').value.trim();
+  const seat = document.getElementById('add-seat').value.trim();
+  const name = document.getElementById('add-name').value.trim();
+  const sex  = document.getElementById('add-sex').value;
+  const idno = document.getElementById('add-idno').value.trim();
+  const opt  = document.getElementById('add-opt').value;
+  const sib  = document.getElementById('add-sib').value.trim();
+  const errEl= document.getElementById('add-err');
+
+  // Validate
+  if(!cls||!seat||!name){
+    errEl.textContent='請填寫班級、座號、姓名（必填）';
+    errEl.style.display='block';
+    return;
+  }
+
+  // Build student object
+  const grade = cls.match(/^\d/)?cls[0]+'年級':'其他';
+  const subs  = SUBSIDY_COLS.filter(c=>{
+    // For a new manually added student, no subsidy cols filled except optimalType mapping
+    return false;
+  });
+  const student = {
+    _id:`${cls}_${seat}_${name}`,
+    grade, optimalType:opt||'未分類/未填寫最優身分',
+    isMulti:false, multiCount:0,
+    '班級':cls,'座號':seat,'姓名':name,'性別':sex,'身分證號':idno,
+    '最優補助身分':opt,'兄弟姊妹':sib,
+    '1.低收(社)':'','2.中低收(社)':'','3.單親(社)':'','4.身障(學)(社)':'',
+    '5.身障(家)(社)':'','6.身障(學)':'','7.身障(家)':'','8.重身障(學)':'',
+    '9.原民生':'','10.原民清寒(原)':'','11.功勳':'','12.導師認定':'',
+  };
+
+  try{
+    const ref=doc(sCol(term));
+    await setDoc(ref,student);
+    // Log addition
+    await addDoc(collection(db,'editLogs'),{
+      editedBy:cUser.uid,
+      editorName:cDoc.customName||cUser.displayName||cUser.email,
+      term, timestamp:serverTimestamp(),
+      changes:[{
+        docId:ref.id,
+        name, cls,
+        action:'add',
+        fields:[{field:'新增學生',from:'',to:`${cls} ${seat}號 ${name} / ${opt}`}]
+      }]
+    });
+    cov('add-ov');
+    clearAddForm();
+    await loadData();
+  }catch(e){
+    errEl.textContent='新增失敗：'+e.message;
+    errEl.style.display='block';
+  }
+}
 
 /* ── IMPORT ── */
 function setupImport(){
