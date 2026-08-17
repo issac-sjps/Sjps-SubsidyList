@@ -245,12 +245,16 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
 
         <div class="setting-group" style="margin-top:14px">
-          <label>填報說明內容（每行一條，可用 {{deadline}} {{ext}} 替換）</label>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span>填報說明內容（每行一條，可用 {{deadline}} {{ext}} 替換）</span>
+            <button type="button" id="btn-reset-instr" style="font-size:.72rem;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;white-space:nowrap">↺ 還原預設說明</button>
+          </label>
           <textarea id="cfg-instructions" rows="6">請於 {{deadline}} 交回此表至註冊組 (分機{{ext}}) ； 不論有無學生申請，都需要導師簽名，再交回註冊組。
 若家長表示學生具有減免身份，卻不在下列表2中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否有同校兄弟姊妹班級與姓名。
 請導師特別詢問轉學生有無高雄市減免身分，若有請家長提供本年度高雄市證明文件。
 若表單內需要刪除或新增導師認定的減免學生名單，請導師直接增列、刪除，並於備註欄註明是否申請午餐減免、同校兄弟姊妹的班級與姓名，以利出納組彙整相關費用。
-書籍費即教科書費用（約1,000餘元）；簿本費為200元，補助學生額外購買黃考卷、練習簿本等用品費用，採先繳後退，待局端審核撥款後再退還。</textarea>
+若不想給予該生導師認定的書籍費、保險費，但想額外給予簿本費補助，請於備註欄另外填寫「只申請簿本費」。
+書籍費即教科書費用（約1,000餘元）；保險費約223元；簿本費為200元，補助學生額外購買黃考卷、練習簿本等用品費用，採先繳後退，待局端審核撥款後再退還。</textarea>
         </div>
 
         <div class="setting-grid" style="margin-top:14px">
@@ -334,6 +338,12 @@ const FB  = initializeApp({
 });
 const auth = getAuth(FB), db = getFirestore(FB);
 const ADMIN_EMAILS = ["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
+const DEFAULT_INSTRUCTIONS=`請於 {{deadline}} 交回此表至註冊組 (分機{{ext}}) ； 不論有無學生申請，都需要導師簽名，再交回註冊組。
+若家長表示學生具有減免身份，卻不在下列表2中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否有同校兄弟姊妹班級與姓名。
+請導師特別詢問轉學生有無高雄市減免身分，若有請家長提供本年度高雄市證明文件。
+若表單內需要刪除或新增導師認定的減免學生名單，請導師直接增列、刪除，並於備註欄註明是否申請午餐減免、同校兄弟姊妹的班級與姓名，以利出納組彙整相關費用。
+若不想給予該生導師認定的書籍費、保險費，但想額外給予簿本費補助，請於備註欄另外填寫「只申請簿本費」。
+書籍費即教科書費用（約1,000餘元）；保險費約223元；簿本費為200元，補助學生額外購買黃考卷、練習簿本等用品費用，採先繳後退，待局端審核撥款後再退還。`;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
@@ -427,6 +437,11 @@ async function initApp(){
   document.getElementById('cfg-instructions').addEventListener('input',autoSave);
   document.getElementById('cfg-year').addEventListener('input',autoSave);
   document.getElementById('cfg-deadline').addEventListener('input',autoSave);
+  document.getElementById('btn-reset-instr').addEventListener('click',()=>{
+    if(!confirm('確定要還原成最新預設的填報說明嗎？目前輸入的內容將被覆蓋。'))return;
+    document.getElementById('cfg-instructions').value=DEFAULT_INSTRUCTIONS;
+    autoSave();
+  });
   document.getElementById('cfg-ext').addEventListener('input',autoSave);
 
   const tSnap=await getDocs(collection(db,'termsMeta'));
