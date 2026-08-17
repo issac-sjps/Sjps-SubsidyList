@@ -829,7 +829,7 @@ async function loadTerms(){
     await setDoc(doc(db,'termsMeta',DEFAULT_TERM),{label:tLabel(DEFAULT_TERM),createdAt:serverTimestamp()});
     terms=[DEFAULT_TERM];
   }
-  if(!terms.includes(term))term=terms[terms.length-1];
+  term=terms[terms.length-1]; // 預設一律顯示最新學期
   const sel=document.getElementById('term-sel');
   sel.innerHTML=terms.map(t=>`<option value="${t}"${t===term?' selected':''}>${tLabel(t)}</option>`).join('');
   sel.onchange=async()=>{
