@@ -430,6 +430,7 @@ td.del-cell:hover .del-btn { opacity:1; }
     <button class="stab" data-p="p-ref">💰 補助對照表</button>
     <button class="stab" data-p="p-import" id="stab-import" style="display:none">📥 匯入資料</button>
     <button class="stab" data-p="p-promote" id="stab-promote" style="display:none">🎓 升學年</button>
+    <button class="stab" data-p="p-transfer" id="stab-transfer" style="display:none">🔄 轉學生專區<span id="transfer-badge" style="display:none;margin-left:5px;background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700"></span></button>
   </div>
 
   <!-- ═══ 名單查閱 ═══ -->
@@ -579,6 +580,17 @@ td.del-cell:hover .del-btn { opacity:1; }
     </div>
   </div>
 
+<!-- ═══ 轉學生專區 ═══ -->
+<div class="panel" id="p-transfer">
+  <div class="card">
+    <div class="card-title">🔄 轉學生專區 — <span id="transfer-term-label">—</span></div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.65">
+      這裡列出目前學期被標記為「轉學/已移出」的學生，不會出現在一般名單和統計裡。資料保留備查，需要時可以還原回一般名單，或永久刪除。
+    </p>
+    <div id="transfer-list"></div>
+  </div>
+</div>
+
 <!-- ═══ 補助對照表 ═══ -->
 <div class="panel" id="p-ref">
   <div class="card">
@@ -658,18 +670,35 @@ td.del-cell:hover .del-btn { opacity:1; }
 <div class="ov" id="del-ov">
   <div class="modal">
     <div class="mttl">🗑️ 刪除學生資料</div>
-    <div class="mdesc" id="del-desc">確定要刪除這筆資料嗎？此操作無法復原。</div>
-    <div style="background:var(--red-bg);border:1px solid var(--red-bd);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
-      <div id="del-student-info" style="font-weight:600;color:var(--red);margin-bottom:6px"></div>
-      <div style="color:var(--text2)">請輸入「<strong>確認刪除</strong>」以確認操作：</div>
+    <div class="mdesc">這位學生要怎麼處理？</div>
+    <div style="background:var(--red-bg);border:1px solid var(--red-bd);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.82rem">
+      <div id="del-student-info" style="font-weight:600;color:var(--red)"></div>
     </div>
-    <input type="text" id="del-confirm-inp" placeholder="輸入「確認刪除」" autocomplete="off"
-      style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;
-      font-family:inherit;font-size:.9rem;outline:none;margin-bottom:8px;transition:border-color .15s">
-    <div id="del-err" style="color:var(--red);font-size:.77rem;margin-bottom:8px;display:none">請輸入正確的確認文字</div>
-    <div class="mbtns">
-      <button class="btn-sm" onclick="cov('del-ov');document.getElementById('del-confirm-inp').value=''">取消</button>
-      <button class="btn-ds" id="btn-del-ok">🗑️ 確認刪除</button>
+
+    <div style="border:1.5px solid var(--accent-bd);background:var(--accent-bg);border-radius:9px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:.87rem;margin-bottom:4px">📦 移至轉學生專區（建議）</div>
+      <div style="font-size:.79rem;color:var(--text2);line-height:1.6;margin-bottom:10px">
+        資料不會刪除，只是從一般名單隱藏，收進「🔄 轉學生專區」保留備查，之後可以隨時還原。
+      </div>
+      <button class="btn-p" id="btn-archive-ok" style="width:100%">📦 移至轉學生專區</button>
+    </div>
+
+    <details style="margin-bottom:4px">
+      <summary style="cursor:pointer;font-size:.82rem;color:var(--text2);font-weight:600;padding:4px 0">
+        或者，我要永久刪除（不可復原）
+      </summary>
+      <div style="margin-top:10px">
+        <div style="color:var(--text2);font-size:.82rem;margin-bottom:8px">請輸入「<strong>確認刪除</strong>」以永久刪除此筆資料：</div>
+        <input type="text" id="del-confirm-inp" placeholder="輸入「確認刪除」" autocomplete="off"
+          style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;
+          font-family:inherit;font-size:.9rem;outline:none;margin-bottom:8px;transition:border-color .15s">
+        <div id="del-err" style="color:var(--red);font-size:.77rem;margin-bottom:8px;display:none">請輸入正確的確認文字</div>
+        <button class="btn-ds" id="btn-del-ok" style="width:100%">🗑️ 永久刪除</button>
+      </div>
+    </details>
+
+    <div class="mbtns" style="margin-top:14px">
+      <button class="btn-sm" style="width:100%" onclick="cov('del-ov');document.getElementById('del-confirm-inp').value=''">取消</button>
     </div>
   </div>
 </div>
@@ -780,7 +809,7 @@ function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,''); 
 
 let cUser=null, cDoc=null;
 let term=DEFAULT_TERM;
-let all=[], filt=[];
+let all=[], filt=[], transferredAll=[];
 let cGrade='all', sCats=new Set(), cSex='all', cMulti=false;
 let editOn=false, edits={};
 let pendingImp=null;
@@ -842,6 +871,7 @@ async function initApp(){
     document.getElementById('admin-link').style.display='inline-flex';
     document.getElementById('stab-import').style.display='';
     document.getElementById('stab-promote').style.display='';
+    document.getElementById('stab-transfer').style.display='';
     document.getElementById('edit-ctrl').style.display='flex';
     document.getElementById('btn-add-student').style.display='inline-flex';
   }
@@ -855,6 +885,7 @@ async function initApp(){
       if(b.dataset.p==='p-promote'){renderDist();}
       if(b.dataset.p==='p-import'){document.getElementById('imp-term').textContent=tLabel(term);}
       if(b.dataset.p==='p-ref'){renderRefTable();}
+      if(b.dataset.p==='p-transfer'){renderTransferZone();}
     };
   });
 
@@ -886,18 +917,18 @@ async function loadTerms(){
   }
   term=terms[terms.length-1]; // 預設一律顯示最新學期
   const sel=document.getElementById('term-sel');
-  sel.innerHTML=terms.map(t=>`<option value="${t}"${t===term?' selected':''}>${tLabel(t)}</option>`).join('');
+  sel.innerHTML=terms.map(t=>`<option value="${t}"${t===term?' selected':''}>${tLabel(t)}（${t}）</option>`).join('');
   sel.onchange=async()=>{
     if(editOn&&Object.keys(edits).length&&!confirm('切換學期將放棄未儲存的編輯，繼續？')){sel.value=term;return;}
     exitEdit(false);
     term=sel.value;
     cGrade='all'; sCats.clear(); cSex='all'; cMulti=false;
     document.querySelectorAll('.chip.sx').forEach(b=>b.classList.toggle('on',b.dataset.v==='all'));
-    document.getElementById('term-badge').textContent=tLabel(term);
+    document.getElementById('term-badge').textContent=`${tLabel(term)}（${term}）`;
     document.getElementById('imp-term').textContent=tLabel(term);
     await loadData();
   };
-  document.getElementById('term-badge').textContent=tLabel(term);
+  document.getElementById('term-badge').textContent=`${tLabel(term)}（${term}）`;
 }
 
 /* ── LOAD DATA ── */
@@ -908,9 +939,13 @@ async function loadData(){
   colWidths={...DEFAULT_WIDTHS};
   try{
     const snap=await getDocs(sCol(term));
-    all=snap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const everyone=snap.docs.map(d=>({_docId:d.id,...d.data()}));
+    all=everyone.filter(s=>!s.transferred);
+    transferredAll=everyone.filter(s=>s.transferred);
     buildFilters();
     renderTable();
+    updateTransferBadge();
+    if(document.getElementById('p-transfer')?.classList.contains('on'))renderTransferZone();
     document.getElementById('dload').style.display='none';
     document.getElementById('dcont').style.display='block';
   }catch(e){
@@ -1437,6 +1472,33 @@ function setupDeleteAdd(){
   };
   delInp.onkeydown=e=>{if(e.key==='Enter')document.getElementById('btn-del-ok').click();};
 
+  document.getElementById('btn-archive-ok').onclick=async()=>{
+    if(!_delDocId)return;
+    try{
+      const s=all.find(x=>x._docId===_delDocId);
+      await updateDoc(doc(sCol(term),_delDocId),{
+        transferred:true,
+        transferredAt:serverTimestamp(),
+        transferredBy:cDoc.customName||cUser.displayName||cUser.email
+      });
+      await addDoc(collection(db,'editLogs'),{
+        editedBy:cUser.uid,
+        editorName:cDoc.customName||cUser.displayName||cUser.email,
+        term, timestamp:serverTimestamp(),
+        changes:[{
+          docId:_delDocId,
+          name:s?.['姓名']||'?',
+          cls:s?.['班級']||'?',
+          action:'archiveTransfer',
+          fields:[]
+        }]
+      });
+      cov('del-ov');
+      _delDocId=null;
+      await loadData();
+    }catch(e){alert('移轉失敗：'+e.message);}
+  };
+
   document.getElementById('btn-del-ok').onclick=async()=>{
     const val=document.getElementById('del-confirm-inp').value.trim();
     if(val!=='確認刪除'){
@@ -1482,6 +1544,85 @@ window.askDelete=function(docId, cls, seat, name){
   document.getElementById('del-err').style.display='none';
   document.getElementById('del-ov').classList.add('open');
   setTimeout(()=>document.getElementById('del-confirm-inp').focus(),80);
+};
+
+/* ══════════════════════════════
+   轉學生專區
+══════════════════════════════ */
+function updateTransferBadge(){
+  const badge=document.getElementById('transfer-badge');
+  if(!badge)return;
+  if(transferredAll.length){
+    badge.textContent=transferredAll.length;
+    badge.style.display='inline-block';
+  }else{
+    badge.style.display='none';
+  }
+}
+
+function renderTransferZone(){
+  document.getElementById('transfer-term-label').textContent=`${tLabel(term)}（${term}）`;
+  const box=document.getElementById('transfer-list');
+  if(!transferredAll.length){
+    box.innerHTML='<div class="empty">目前學期沒有轉學生資料</div>';
+    return;
+  }
+  const rows=[...transferredAll].sort((a,b)=>String(a['班級']||'').localeCompare(String(b['班級']||'')));
+  box.innerHTML=`
+    <table style="border-collapse:collapse;width:100%;font-size:.85rem">
+      <thead><tr>
+        <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">班級</th>
+        <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">座號</th>
+        <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">姓名</th>
+        <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">移出者</th>
+        <th style="text-align:right;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">操作</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(s=>`
+          <tr>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${esc(s['班級']||'')}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${esc(String(s['座號']||''))}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600">${esc(s['姓名']||'')}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text3)">${esc(s.transferredBy||'—')}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap">
+              <button class="btn-sm" onclick="restoreTransfer('${escA(s._docId)}')" style="margin-right:6px">↩️ 還原</button>
+              <button class="btn-ds" onclick="permanentDeleteTransfer('${escA(s._docId)}','${escA(s['姓名']||'')}')">🗑️ 永久刪除</button>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+window.restoreTransfer=async function(docId){
+  const s=transferredAll.find(x=>x._docId===docId);
+  if(!confirm(`確定要把「${s?.['姓名']||''}」還原回一般名單嗎？`))return;
+  try{
+    await updateDoc(doc(sCol(term),docId),{
+      transferred:false, transferredAt:null, transferredBy:null
+    });
+    await addDoc(collection(db,'editLogs'),{
+      editedBy:cUser.uid,
+      editorName:cDoc.customName||cUser.displayName||cUser.email,
+      term, timestamp:serverTimestamp(),
+      changes:[{docId,name:s?.['姓名']||'?',cls:s?.['班級']||'?',action:'restoreTransfer',fields:[]}]
+    });
+    await loadData();
+  }catch(e){alert('還原失敗：'+e.message);}
+};
+
+window.permanentDeleteTransfer=async function(docId,name){
+  if(!confirm(`確定要永久刪除「${name}」嗎？此操作無法復原。`))return;
+  if(!confirm(`再次確認：真的要永久刪除「${name}」嗎？`))return;
+  try{
+    await deleteDoc(doc(sCol(term),docId));
+    await addDoc(collection(db,'editLogs'),{
+      editedBy:cUser.uid,
+      editorName:cDoc.customName||cUser.displayName||cUser.email,
+      term, timestamp:serverTimestamp(),
+      changes:[{docId,name,cls:'',action:'delete',fields:[]}]
+    });
+    await loadData();
+  }catch(e){alert('刪除失敗：'+e.message);}
 };
 
 function openAddModal(){
