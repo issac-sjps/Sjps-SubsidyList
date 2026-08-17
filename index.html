@@ -609,7 +609,6 @@ td.del-cell:hover .del-btn { opacity:1; }
             </th>
             <th class="ref-th">家長會費</th>
             <th class="ref-th">平安保險費</th>
-            <th class="ref-th">午餐費</th>
             <th class="ref-th">教科書費（書籍費）</th>
             <th class="ref-th" id="ref-th-extra" style="display:none">備註</th>
           </tr>
@@ -626,6 +625,7 @@ td.del-cell:hover .del-btn { opacity:1; }
       </div>
       <div style="font-size:.8rem;color:var(--text2);line-height:1.8">
         <div style="font-weight:700;color:var(--text);margin-bottom:4px">特別說明</div>
+        <div>🍱 <strong>午餐費</strong>本學年度起全面補助，各身分別皆免繳，故不再列入本表</div>
         <div>🔹 <strong>11.功勳</strong>：全繳後退書籍費</div>
         <div>🔹 多重身分者，以「最優補助身分」欄位所列類別為準</div>
       </div>
@@ -1994,7 +1994,7 @@ const REF_DATA = [
   { cat:'11.功勳',      費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:false }, note:'全繳後退書籍費' },
   { cat:'12.導師認定',  費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
 ];
-const FEE_COLS = ['家長會費','平安保險費','午餐費','教科書費'];
+const FEE_COLS = ['家長會費','平安保險費','教科書費'];
 // Category colour map (light background + border for the row label)
 const CAT_COLORS = {
   '1.低收(社)':    {bg:'#fef2f2',bd:'#fca5a5',tx:'#c81e1e'},
