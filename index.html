@@ -1599,29 +1599,54 @@ function renderTransferZone(){
     return;
   }
   const rows=[...transferredAll].sort((a,b)=>String(a['班級']||'').localeCompare(String(b['班級']||'')));
+  const fmtDate=ts=>{
+    if(!ts)return'—';
+    try{const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return'—';}
+  };
   box.innerHTML=`
     <table style="border-collapse:collapse;width:100%;font-size:.85rem">
       <thead><tr>
+        <th style="width:26px;border-bottom:2px solid var(--border)"></th>
         <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">班級</th>
         <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">座號</th>
         <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">姓名</th>
+        <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">最優補助身分</th>
         <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">移出者</th>
+        <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">移出時間</th>
         <th style="text-align:right;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);font-size:.78rem">操作</th>
       </tr></thead>
       <tbody>
-        ${rows.map(s=>`
-          <tr>
-            <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${esc(s['班級']||'')}</td>
+        ${rows.map((s,i)=>{
+          const rid=`tr-detail-${i}`;
+          const noClass=!String(s['班級']||'').trim();
+          return `
+          <tr style="${noClass?'background:#fff7ed':''}" class="tr-row-toggle" onclick="document.getElementById('${rid}').classList.toggle('open')">
+            <td style="padding:8px 6px;border-bottom:1px solid var(--border);text-align:center;color:var(--text3);cursor:pointer">▸</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${esc(s['班級']||'')||'<span style=\"color:var(--red);font-weight:600\">⚠️ 無班級</span>'}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${esc(String(s['座號']||''))}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600">${esc(s['姓名']||'')}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:.8rem">${esc(s['最優補助身分']||'—')}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text3)">${esc(s.transferredBy||'—')}</td>
-            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap">
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:.76rem;color:var(--text3);white-space:nowrap">${fmtDate(s.transferredAt)}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap" onclick="event.stopPropagation()">
               <button class="btn-sm" onclick="restoreTransfer('${escA(s._docId)}')" style="margin-right:6px">↩️ 還原</button>
               <button class="btn-ds" onclick="permanentDeleteTransfer('${escA(s._docId)}','${escA(s['姓名']||'')}')">🗑️ 永久刪除</button>
             </td>
-          </tr>`).join('')}
+          </tr>
+          <tr id="${rid}" class="tr-detail"><td colspan="8" style="padding:0;border-bottom:1px solid var(--border)">
+            <div style="padding:12px 14px 14px 40px;background:#f8fafc;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px 18px;font-size:.78rem">
+              ${ALL_COLS.map(c=>`<div><span style="color:var(--text3)">${esc(c)}：</span><span style="font-weight:600">${esc(String(s[c]??'').trim()||'—')}</span></div>`).join('')}
+              <div><span style="color:var(--text3)">多重身分：</span><span style="font-weight:600">${s.isMulti?`是（${s.multiCount||0}項）`:'否'}</span></div>
+            </div>
+          </td></tr>`;
+        }).join('')}
       </tbody>
-    </table>`;
+    </table>
+    <style>
+      .tr-detail{display:none}
+      .tr-detail.open{display:table-row}
+      .tr-row-toggle:hover{background:#f4f7fb;cursor:pointer}
+    </style>`;
 }
 
 window.restoreTransfer=async function(docId){
@@ -1962,7 +1987,7 @@ async function doPromote(){
   document.getElementById('promo-ok').style.display='none';
   try{
     const snap=await getDocs(sCol(term));
-    const students=snap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const students=snap.docs.map(d=>({_docId:d.id,...d.data()})).filter(s=>!s.transferred);
     const newCol=collection(db,`terms/${newId}/students`);
     const batch=writeBatch(db);
     let arch=0,prom=0,clr=0;
@@ -1980,7 +2005,7 @@ async function doPromote(){
     await addDoc(collection(db,'editLogs'),{
       editedBy:cUser.uid,editorName:cDoc.customName||cUser.displayName||cUser.email,
       type:'promote',fromTerm:term,toTerm:newId,timestamp:serverTimestamp(),
-      summary:`升學年 ${tLabel(term)}→${raw}，升級${prom}人，1年級清空${clr}人，6年級封存${arch}人`
+      summary:`升學年 ${tLabel(term)}→${raw}，升級${prom}人，1年級清空${clr}人，6年級封存${arch}人（不含轉學生）`
     });
     document.getElementById('promo-load').style.display='none';
     document.getElementById('btn-promo').disabled=false;
