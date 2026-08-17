@@ -216,7 +216,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
       <!-- 1. 表單設定 -->
       <div class="card">
-        <div class="card-title">⚙️ 表單設定</div>
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <span>⚙️ 表單設定</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span id="save-status" style="font-size:.76rem;font-weight:600;color:var(--accent);opacity:0;transition:opacity .3s">✅ 已儲存</span>
+            <button type="button" id="btn-manual-save" style="font-size:.78rem;padding:5px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap;font-weight:600">💾 儲存更新</button>
+          </span>
+        </div>
         <div class="setting-grid">
           <div class="setting-group">
             <label>學年度</label>
@@ -413,22 +419,32 @@ async function initApp(){
 
   // ★ Auto-save config to Firestore on any change (debounced)
   let saveTimer=null;
+  const showSaved=()=>{
+    const el=document.getElementById('save-status');
+    el.style.opacity='1';
+    clearTimeout(showSaved._t);
+    showSaved._t=setTimeout(()=>{el.style.opacity='0';},2000);
+  };
+  const doSaveConfig=async()=>{
+    await setDoc(doc(db,'settings','printConfig'),{
+      year:   document.getElementById('cfg-year').value,
+      sem:    document.getElementById('cfg-sem').value,
+      deadline: document.getElementById('cfg-deadline').value,
+      ext:    document.getElementById('cfg-ext').value,
+      instructions: document.getElementById('cfg-instructions').value,
+      col4:   document.getElementById('cfg-col4').value,
+      col5:   document.getElementById('cfg-col5').value,
+      showRef:    document.getElementById('cfg-ref').checked,
+      showFooter: document.getElementById('cfg-footer').checked,
+      updatedAt:  serverTimestamp()
+    });
+  };
   const autoSave=()=>{
     clearTimeout(saveTimer);
     saveTimer=setTimeout(async()=>{
       try{
-        await setDoc(doc(db,'settings','printConfig'),{
-          year:   document.getElementById('cfg-year').value,
-          sem:    document.getElementById('cfg-sem').value,
-          deadline: document.getElementById('cfg-deadline').value,
-          ext:    document.getElementById('cfg-ext').value,
-          instructions: document.getElementById('cfg-instructions').value,
-          col4:   document.getElementById('cfg-col4').value,
-          col5:   document.getElementById('cfg-col5').value,
-          showRef:    document.getElementById('cfg-ref').checked,
-          showFooter: document.getElementById('cfg-footer').checked,
-          updatedAt:  serverTimestamp()
-        });
+        await doSaveConfig();
+        showSaved();
       }catch(e){console.warn('Config save:',e);}
     },1200);
   };
@@ -437,6 +453,17 @@ async function initApp(){
   document.getElementById('cfg-instructions').addEventListener('input',autoSave);
   document.getElementById('cfg-year').addEventListener('input',autoSave);
   document.getElementById('cfg-deadline').addEventListener('input',autoSave);
+  document.getElementById('btn-manual-save').addEventListener('click',async()=>{
+    if(!confirm('確定要儲存目前的表單設定嗎？'))return;
+    const btn=document.getElementById('btn-manual-save');
+    btn.disabled=true;btn.textContent='儲存中…';
+    try{
+      clearTimeout(saveTimer);
+      await doSaveConfig();
+      showSaved();
+    }catch(e){alert('儲存失敗：'+e.message);}
+    finally{btn.disabled=false;btn.textContent='💾 儲存更新';}
+  });
   document.getElementById('btn-reset-instr').addEventListener('click',()=>{
     if(!confirm('確定要還原成最新預設的填報說明嗎？目前輸入的內容將被覆蓋。'))return;
     document.getElementById('cfg-instructions').value=DEFAULT_INSTRUCTIONS;
