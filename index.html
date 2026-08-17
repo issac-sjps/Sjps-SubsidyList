@@ -302,7 +302,7 @@ td.del-cell:hover .del-btn { opacity:1; }
 .ref-cat-cell.ref-stripe{background:#f9fbfb;}
 .ref-val-cell{padding:4px 10px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f2f5f8;
   text-align:center;font-size:.8rem;}
-.ref-x{display:inline-flex;align-items:center;justify-content:center;
+.ref-x{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
   width:20px;height:20px;border-radius:50%;
   background:var(--green-bg);color:var(--green);font-weight:700;font-size:.74rem;
   border:1.5px solid var(--green-bd);}
@@ -527,6 +527,29 @@ td.del-cell:hover .del-btn { opacity:1; }
       </div>
     </div>
     <div class="card">
+      <div class="card-title">⬆️ 手動升一個年級</div>
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:12px;line-height:1.65">
+        只針對<strong>目前正在檢視的學期</strong>、單一年級做升級（例如：101 → 201），不會建立新學期、不影響其他年級。
+        適合用來手動修正個別漏升的學生。1年級升上去後班級座號會清空待手動填入；6年級無法再往上升級。
+      </p>
+      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+        <div>
+          <label style="font-size:.78rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">選擇要升級的年級</label>
+          <select id="manual-promo-grade" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;
+            font-family:inherit;font-size:.87rem;outline:none">
+            <option value="1">1年級 → 2年級</option>
+            <option value="2">2年級 → 3年級</option>
+            <option value="3">3年級 → 4年級</option>
+            <option value="4">4年級 → 5年級</option>
+            <option value="5">5年級 → 6年級</option>
+          </select>
+        </div>
+        <button class="btn-promo" id="btn-manual-promo">⬆️ 升級（<span id="manual-promo-count">0</span> 人）</button>
+      </div>
+      <div id="manual-promo-load" style="display:none;margin-top:10px" class="lbar"><span class="spin"></span>處理中...</div>
+      <div id="manual-promo-ok" class="alert as" style="display:none;margin-top:10px"></div>
+    </div>
+    <div class="card">
       <div class="card-title">🧹 清除目前學期的六年級名單</div>
       <p style="font-size:.82rem;color:var(--text2);margin-bottom:12px;line-height:1.65">
         若「升學年」後，新學期裡仍看得到六年級學生（例如誤按、或資料是在升學年之前就手動加入新學期的），
@@ -569,7 +592,7 @@ td.del-cell:hover .del-btn { opacity:1; }
     <div style="margin-top:14px;display:flex;gap:20px;flex-wrap:wrap">
       <div style="font-size:.8rem;color:var(--text2);line-height:1.8">
         <div style="font-weight:700;color:var(--text);margin-bottom:4px">圖例</div>
-        <div><span class="ref-x">✓ 免繳</span> 該身分免繳此費用</div>
+        <div><span class="ref-x">✓</span> 免繳 — 該身分免繳此費用</div>
         <div><span style="color:var(--text3);font-size:.85rem">—</span> 需正常繳交</div>
       </div>
       <div style="font-size:.8rem;color:var(--text2);line-height:1.8">
@@ -1583,6 +1606,8 @@ function setupPromote(){
   inp.oninput=()=>document.getElementById('new-term-preview').textContent=inp.value||'—';
   document.getElementById('btn-promo').onclick=doPromote;
   document.getElementById('btn-clear-g6').onclick=doClearGrade6;
+  document.getElementById('manual-promo-grade').onchange=updateManualPromoCount;
+  document.getElementById('btn-manual-promo').onclick=doManualPromoteGrade;
 }
 function renderDist(){
   const dist={};
@@ -1602,6 +1627,55 @@ function renderDist(){
   document.getElementById('clear-g6-term').textContent=tLabel(term);
   document.getElementById('clear-g6-count').textContent=g6Count;
   document.getElementById('btn-clear-g6').disabled=g6Count===0;
+
+  updateManualPromoCount();
+}
+
+function updateManualPromoCount(){
+  const gn=document.getElementById('manual-promo-grade').value;
+  const count=all.filter(s=>s.grade===`${gn}年級`).length;
+  document.getElementById('manual-promo-count').textContent=count;
+  document.getElementById('btn-manual-promo').disabled=count===0;
+}
+
+async function doManualPromoteGrade(){
+  const gn=parseInt(document.getElementById('manual-promo-grade').value);
+  const students=all.filter(s=>s.grade===`${gn}年級`);
+  if(!students.length){alert(`目前學期沒有${gn}年級學生`);return;}
+  const nextGn=gn+1;
+  if(!confirm(`確定要將「${tLabel(term)}」的 ${gn}年級（共 ${students.length} 人）手動升級為 ${nextGn}年級嗎？`))return;
+  document.getElementById('btn-manual-promo').disabled=true;
+  document.getElementById('manual-promo-load').style.display='block';
+  document.getElementById('manual-promo-ok').style.display='none';
+  try{
+    const batch=writeBatch(db);
+    let clr=0,prom=0;
+    students.forEach(s=>{
+      const cls=String(s['班級']||'').trim();
+      const ref=doc(sCol(term),s._docId);
+      if(gn===1){
+        batch.update(ref,{'班級':'','座號':'','grade':'2年級'});clr++;
+      }else{
+        batch.update(ref,{'班級':cls.replace(/^\d/,String(nextGn)),'grade':`${nextGn}年級`});prom++;
+      }
+    });
+    await batch.commit();
+    await addDoc(collection(db,'editLogs'),{
+      editedBy:cUser.uid,editorName:cDoc.customName||cUser.displayName||cUser.email,
+      type:'manualPromoteGrade',term,fromGrade:gn,toGrade:nextGn,timestamp:serverTimestamp(),
+      summary:`手動升級「${tLabel(term)}」${gn}年級→${nextGn}年級，共${students.length}人${clr?`（含清空班級座號${clr}人）`:''}`
+    });
+    document.getElementById('manual-promo-load').style.display='none';
+    document.getElementById('manual-promo-ok').textContent=
+      `✅ 已將 ${students.length} 位 ${gn}年級學生升級為 ${nextGn}年級${clr?`，班級座號已清空待手動填入`:''}。`;
+    document.getElementById('manual-promo-ok').style.display='block';
+    await loadData();
+    renderDist();
+  }catch(e){
+    document.getElementById('manual-promo-load').style.display='none';
+    document.getElementById('btn-manual-promo').disabled=false;
+    alert('升級失敗：'+e.message);
+  }
 }
 
 async function doClearGrade6(){
