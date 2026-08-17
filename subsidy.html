@@ -539,10 +539,10 @@ function computeStats(){
     if(bookType&&fee>0){bookTotal+=fee;bookCount++;bookAmt=fee;
       bookStudents.push({...s,bookType,bookAmt});}
 
-    // Notebook (簿本費): 中低收 + 導師認定 → $200
-    if(opt.includes('中低')||opt.includes('導師')){
+    // Notebook (簿本費): 低收 + 中低收 + 導師認定 → $200
+    if(opt.includes('低收')||opt.includes('導師')){
       noteTotal+=200;noteCount++;
-      noteStudents.push({...s,noteType:opt.includes('中低')?'中低收入戶':'導師認定'});
+      noteStudents.push({...s,noteType:opt.includes('中低')?'中低收入戶':(opt.includes('低收')?'低收入戶':'導師認定')});
     }
 
     // Indigenous
@@ -653,7 +653,7 @@ function renderBookList(list,g){
 /* ── NOTE ── */
 function renderNote(s){
   document.getElementById('note-total-lbl').textContent=`— 共 ${s.noteCount} 人 ${money(s.noteTotal)}`;
-  const cats=['中低收入戶','導師認定'];
+  const cats=['低收入戶','中低收入戶','導師認定'];
   const matrix={};
   cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
   s.noteStudents.forEach(x=>{
