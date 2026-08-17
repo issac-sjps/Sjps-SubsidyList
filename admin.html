@@ -62,7 +62,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .btn-sm:hover{background:var(--surface2);color:var(--text);}
 
 /* PANELS */
-.panel{display:none;padding:20px;max-width:1100px;margin:0 auto;width:100%;}
+.panel{display:none;padding:20px;max-width:1600px;width:90%;margin:0 auto;}
 .panel.on{display:block;}
 
 /* CARD */
@@ -81,8 +81,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .utbl tbody tr:last-child td{border:none;}
 .uname-cell .n{font-weight:600;}
 .uname-cell .e{font-size:.76rem;color:var(--text3);margin-top:2px;}
-.ag{display:flex;gap:5px;flex-wrap:wrap;}
-.btn-act{padding:5px 10px;border-radius:5px;cursor:pointer;font-size:.77rem;font-family:inherit;border:none;transition:all .15s;}
+.ag{display:flex;gap:6px;flex-wrap:nowrap;}
+.btn-act{padding:5px 10px;border-radius:5px;cursor:pointer;font-size:.77rem;font-family:inherit;border:none;transition:all .15s;white-space:nowrap;}
+.utbl thead th:last-child,.utbl tbody td:last-child{min-width:260px;}
 .btn-ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
 .btn-ok-a{background:var(--accent-bg);color:var(--accent);border:1px solid #bfdbfe;font-weight:600;}
 .btn-deny{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
