@@ -63,7 +63,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
 
 /* PAGE */
-.page{display:none;padding:20px;max-width:1600px;width:90%;margin:0 auto;}
+.page{display:none;padding:20px;max-width:1600px;width:98%;margin:0 auto;}
 .page.on{display:block;}
 
 /* STAT CARDS */
@@ -467,7 +467,7 @@ async function loadData(){
   document.getElementById('dash-content').style.display='none';
   try{
     const snap=await getDocs(collection(db,`terms/${currentTerm}/students`));
-    allStudents=snap.docs.map(d=>d.data());
+    allStudents=snap.docs.map(d=>d.data()).filter(s=>!s.transferred);
     renderAll();
     document.getElementById('dash-loading').style.display='none';
     document.getElementById('dash-content').style.display='block';
