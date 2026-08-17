@@ -63,7 +63,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
 
 /* PAGE */
-.page{display:none;padding:20px;max-width:1600px;width:98%;margin:0 auto;}
+.page{display:none;padding:20px;max-width:none;width:98%;margin:0 auto;}
 .page.on{display:block;}
 
 /* STAT CARDS */
@@ -615,7 +615,12 @@ function renderMoe(s){
   renderMoeList(s.moeStudents,0);
 }
 function renderMoeList(list,g){
-  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  const f=(g?list.filter(x=>grade(x['班級']||'')==g):list.slice())
+    .sort((a,b)=>{
+      const c=String(a['班級']||'').localeCompare(String(b['班級']||''),'zh-TW');
+      if(c!==0)return c;
+      return (parseInt(a['座號'])||0)-(parseInt(b['座號'])||0);
+    });
   document.getElementById('moe-tbody').innerHTML=f.map(x=>`<tr>
     <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
     <td style="font-weight:600">${esc(x['姓名']||'')}</td>
@@ -640,7 +645,12 @@ function renderBook(s){
   renderBookList(s.bookStudents,0);
 }
 function renderBookList(list,g){
-  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  const f=(g?list.filter(x=>grade(x['班級']||'')==g):list.slice())
+    .sort((a,b)=>{
+      const c=String(a['班級']||'').localeCompare(String(b['班級']||''),'zh-TW');
+      if(c!==0)return c;
+      return (parseInt(a['座號'])||0)-(parseInt(b['座號'])||0);
+    });
   document.getElementById('book-tbody').innerHTML=f.map(x=>`<tr>
     <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
     <td style="font-weight:600">${esc(x['姓名']||'')}</td>
@@ -665,7 +675,12 @@ function renderNote(s){
   renderNoteList(s.noteStudents,0);
 }
 function renderNoteList(list,g){
-  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  const f=(g?list.filter(x=>grade(x['班級']||'')==g):list.slice())
+    .sort((a,b)=>{
+      const c=String(a['班級']||'').localeCompare(String(b['班級']||''),'zh-TW');
+      if(c!==0)return c;
+      return (parseInt(a['座號'])||0)-(parseInt(b['座號'])||0);
+    });
   document.getElementById('note-tbody').innerHTML=f.map(x=>`<tr>
     <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
     <td style="font-weight:600">${esc(x['姓名']||'')}</td>
@@ -694,7 +709,12 @@ function renderIndig(s){
   renderIndigList(s.indigStudents,0);
 }
 function renderIndigList(list,g){
-  const f=g?list.filter(x=>grade(x['班級']||'')==g):list;
+  const f=(g?list.filter(x=>grade(x['班級']||'')==g):list.slice())
+    .sort((a,b)=>{
+      const c=String(a['班級']||'').localeCompare(String(b['班級']||''),'zh-TW');
+      if(c!==0)return c;
+      return (parseInt(a['座號'])||0)-(parseInt(b['座號'])||0);
+    });
   document.getElementById('indig-tbody').innerHTML=f.map(x=>`<tr>
     <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
     <td style="font-weight:600">${esc(x['姓名']||'')}</td>
