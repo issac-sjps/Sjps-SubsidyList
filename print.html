@@ -256,7 +256,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
             <button type="button" id="btn-reset-instr" style="font-size:.72rem;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;white-space:nowrap">↺ 還原預設說明</button>
           </label>
           <textarea id="cfg-instructions" rows="6">請於 {{deadline}} 交回此表至註冊組 (分機{{ext}}) ； 不論有無學生申請，都需要導師簽名，再交回註冊組。
-若家長表示學生具有減免身份，卻不在下列表2中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否有同校兄弟姊妹班級與姓名。
+若家長表示學生具有減免身份，卻不在下列表2（表2為上學期已核定通過之名單）中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否有同校兄弟姊妹班級與姓名。若表2備註中顯示該生資格已消失，請家長提供相關證明文件重新申請。
 請導師特別詢問轉學生有無高雄市減免身分，若有請家長提供本年度高雄市證明文件。
 若表單內需要刪除或新增導師認定的減免學生名單，請導師直接增列、刪除，並於備註欄註明是否申請午餐減免、同校兄弟姊妹的班級與姓名，以利出納組彙整相關費用。
 若不想給予該生導師認定的書籍費、保險費，但想額外給予簿本費補助，請於備註欄另外填寫「只申請簿本費」。
@@ -273,6 +273,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
             <label>兄弟姊妹欄標題</label>
             <textarea id="cfg-col5" rows="2">兄弟姊妹
 (列出同校弟妹的班級姓名)</textarea>
+          </div>
+          <div class="setting-group">
+            <label>空白列印行數（有資料的班級）</label>
+            <input type="number" id="cfg-emptyrows" min="0" max="20" value="6">
+          </div>
+          <div class="setting-group">
+            <label>空白列印行數（無資料/全空的班級）</label>
+            <input type="number" id="cfg-emptyrows-blank" min="0" max="20" value="8">
           </div>
         </div>
       </div>
@@ -345,7 +353,7 @@ const FB  = initializeApp({
 const auth = getAuth(FB), db = getFirestore(FB);
 const ADMIN_EMAILS = ["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
 const DEFAULT_INSTRUCTIONS=`請於 {{deadline}} 交回此表至註冊組 (分機{{ext}}) ； 不論有無學生申請，都需要導師簽名，再交回註冊組。
-若家長表示學生具有減免身份，卻不在下列表2中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否有同校兄弟姊妹班級與姓名。
+若家長表示學生具有減免身份，卻不在下列表2（表2為上學期已核定通過之名單）中，請家長提供減免文件正本，交予註冊組掃描留存；並請導師於備註欄註明該生是否有同校兄弟姊妹班級與姓名。若表2備註中顯示該生資格已消失，請家長提供相關證明文件重新申請。
 請導師特別詢問轉學生有無高雄市減免身分，若有請家長提供本年度高雄市證明文件。
 若表單內需要刪除或新增導師認定的減免學生名單，請導師直接增列、刪除，並於備註欄註明是否申請午餐減免、同校兄弟姊妹的班級與姓名，以利出納組彙整相關費用。
 若不想給予該生導師認定的書籍費、保險費，但想額外給予簿本費補助，請於備註欄另外填寫「只申請簿本費」。
@@ -412,6 +420,8 @@ async function initApp(){
       if(c.instructions) document.getElementById('cfg-instructions').value=c.instructions;
       if(c.col4!==undefined) document.getElementById('cfg-col4').value=c.col4;
       if(c.col5!==undefined) document.getElementById('cfg-col5').value=c.col5;
+      if(c.emptyRows!==undefined)      document.getElementById('cfg-emptyrows').value=c.emptyRows;
+      if(c.emptyRowsBlank!==undefined) document.getElementById('cfg-emptyrows-blank').value=c.emptyRowsBlank;
       if(c.showRef!==undefined)    document.getElementById('cfg-ref').checked=c.showRef;
       if(c.showFooter!==undefined) document.getElementById('cfg-footer').checked=c.showFooter;
     }
@@ -434,6 +444,8 @@ async function initApp(){
       instructions: document.getElementById('cfg-instructions').value,
       col4:   document.getElementById('cfg-col4').value,
       col5:   document.getElementById('cfg-col5').value,
+      emptyRows:      document.getElementById('cfg-emptyrows').value,
+      emptyRowsBlank: document.getElementById('cfg-emptyrows-blank').value,
       showRef:    document.getElementById('cfg-ref').checked,
       showFooter: document.getElementById('cfg-footer').checked,
       updatedAt:  serverTimestamp()
@@ -448,7 +460,7 @@ async function initApp(){
       }catch(e){console.warn('Config save:',e);}
     },1200);
   };
-  ['cfg-year','cfg-sem','cfg-deadline','cfg-ext','cfg-instructions','cfg-col4','cfg-col5','cfg-ref','cfg-footer']
+  ['cfg-year','cfg-sem','cfg-deadline','cfg-ext','cfg-instructions','cfg-col4','cfg-col5','cfg-emptyrows','cfg-emptyrows-blank','cfg-ref','cfg-footer']
     .forEach(id=>document.getElementById(id).addEventListener('change',autoSave));
   document.getElementById('cfg-instructions').addEventListener('input',autoSave);
   document.getElementById('cfg-year').addEventListener('input',autoSave);
@@ -652,7 +664,9 @@ function getCfg(){
   const showFooter=document.getElementById('cfg-footer').checked;
   const col4=document.getElementById('cfg-col4').value;
   const col5=document.getElementById('cfg-col5').value;
-  return{year,sem,deadline,ext,instructions,showRef,showFooter,col4,col5};
+  const emptyRows=parseInt(document.getElementById('cfg-emptyrows').value)||0;
+  const emptyRowsBlank=parseInt(document.getElementById('cfg-emptyrows-blank').value)||0;
+  return{year,sem,deadline,ext,instructions,showRef,showFooter,col4,col5,emptyRows,emptyRowsBlank};
 }
 
 /* ── REF TABLE DATA ── */
@@ -736,8 +750,8 @@ function buildClassHTML(cls, cfg, isScreen=false){
     </tr>`;
   });
 
-  // ★ 空班級印5行空白，有資料的班級印2行
-  const emptyRowCount = isEmpty ? 5 : 2;
+  // ★ 空班級印指定行空白，有資料的班級印指定行（可於表單設定調整）
+  const emptyRowCount = isEmpty ? (cfg.emptyRowsBlank??8) : (cfg.emptyRows??6);
   for(let i=0;i<emptyRowCount;i++){
     html+=`<tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>`;
   }
