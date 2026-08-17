@@ -531,6 +531,26 @@ td.del-cell:hover .del-btn { opacity:1; }
       <div id="promo-load" style="display:none;margin-top:10px" class="lbar"><span class="spin"></span>升學年處理中...</div>
       <div id="promo-ok" class="alert as" style="display:none;margin-top:10px"></div>
     </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">📄 換到下學期（同學年，例如 115上 → 115下）</div>
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:12px;line-height:1.65">
+        目前用不到也沒關係，先做起來備用。跟「升學年」不同，這個只是把資料<strong>原封不動複製</strong>到新學期：
+        班級、座號、年級<strong>都不會改變</strong>，單純是類似備份、換學期用的。
+        原學期裡已標記的轉學生<strong>不會</strong>複製過去；新學期建立後，之後有轉學生再到新學期裡另外標記即可。
+      </p>
+      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+        <div>
+          <label style="font-size:.78rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">新學期名稱</label>
+          <input type="text" id="new-sem-inp" placeholder="如：115下"
+            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;
+            font-family:inherit;font-size:.87rem;width:130px;outline:none">
+        </div>
+        <button class="btn-promo" id="btn-new-sem">📄 建立下學期</button>
+      </div>
+      <div id="new-sem-load" style="display:none;margin-top:10px" class="lbar"><span class="spin"></span>建立中...</div>
+      <div id="new-sem-ok" class="alert as" style="display:none;margin-top:10px"></div>
+    </div>
     <div class="card">
       <div class="card-title">📊 目前學期學生分布</div>
       <div id="grade-dist">
@@ -610,6 +630,7 @@ td.del-cell:hover .del-btn { opacity:1; }
             <th class="ref-th">家長會費</th>
             <th class="ref-th">平安保險費</th>
             <th class="ref-th">教科書費（書籍費）</th>
+            <th class="ref-th">簿本費</th>
             <th class="ref-th" id="ref-th-extra" style="display:none">備註</th>
           </tr>
         </thead>
@@ -1819,6 +1840,7 @@ function setupPromote(){
   document.getElementById('new-term-preview').textContent=tLabel(sug);
   inp.oninput=()=>document.getElementById('new-term-preview').textContent=inp.value||'—';
   document.getElementById('btn-promo').onclick=doPromote;
+  document.getElementById('btn-new-sem').onclick=doNewSemester;
   document.getElementById('btn-clear-g6').onclick=doClearGrade6;
   document.getElementById('manual-promo-grade').onchange=updateManualPromoCount;
   document.getElementById('btn-manual-promo').onclick=doManualPromoteGrade;
@@ -1967,6 +1989,48 @@ async function doPromote(){
   }
 }
 
+async function doNewSemester(){
+  const raw=document.getElementById('new-sem-inp').value.trim();
+  if(!raw){alert('請輸入新學期名稱');return;}
+  const newId=raw.replace(/上$/,'-1').replace(/下$/,'-2');
+  if(!newId.match(/^\d{3}-[12]$/)){alert('格式有誤，請輸入如「115上」或「115下」');return;}
+  if(!confirm(`確定建立下學期？\n${tLabel(term)} → ${raw}\n\n資料將原封不動複製（班級、座號、年級都不變），轉學生不會複製過去。此操作不可逆。`))return;
+  document.getElementById('btn-new-sem').disabled=true;
+  document.getElementById('new-sem-load').style.display='block';
+  document.getElementById('new-sem-ok').style.display='none';
+  try{
+    const snap=await getDocs(sCol(term));
+    const students=snap.docs.map(d=>({_docId:d.id,...d.data()})).filter(s=>!s.transferred);
+    const newCol=collection(db,`terms/${newId}/students`);
+    const batch=writeBatch(db);
+    students.forEach(s=>{
+      const ns={...s};delete ns._docId;
+      batch.set(doc(newCol),ns);
+    });
+    batch.set(doc(db,'termsMeta',newId),{label:raw,createdAt:serverTimestamp(),copiedFrom:term});
+    await batch.commit();
+    await addDoc(collection(db,'editLogs'),{
+      editedBy:cUser.uid,editorName:cDoc.customName||cUser.displayName||cUser.email,
+      type:'newSemester',fromTerm:term,toTerm:newId,timestamp:serverTimestamp(),
+      summary:`換到下學期 ${tLabel(term)}→${raw}，複製${students.length}人（不含轉學生）`
+    });
+    document.getElementById('new-sem-load').style.display='none';
+    document.getElementById('btn-new-sem').disabled=false;
+    document.getElementById('new-sem-ok').textContent=
+      `✅ 新學期「${raw}」建立完成！複製了 ${students.length} 位學生，班級座號年級皆不變。`;
+    document.getElementById('new-sem-ok').style.display='block';
+    await loadTerms();
+    term=newId;
+    document.getElementById('term-sel').value=newId;
+    document.getElementById('term-badge').textContent=`${tLabel(term)}（${term}）`;
+    await loadData();
+  }catch(e){
+    document.getElementById('new-sem-load').style.display='none';
+    document.getElementById('btn-new-sem').disabled=false;
+    alert('建立下學期失敗：'+e.message);
+  }
+}
+
 /* ── EXPORT ── */
 function doExport(data,label){
   if(!data.length){alert('沒有資料');return;}
@@ -1981,20 +2045,20 @@ function doExport(data,label){
 /* ── 補助對照表 ── */
 // 資料來源：依據你提供的圖片
 const REF_DATA = [
-  { cat:'1.低收(社)',    費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
-  { cat:'2.中低收(社)', 費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
-  { cat:'3.單親(社)',   費: { 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:false }, note:'' },
-  { cat:'4.身障(學)(社)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:true  }, note:'' },
-  { cat:'5.身障(家)(社)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:true  }, note:'' },
-  { cat:'6.身障(學)',   費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:true  }, note:'' },
-  { cat:'7.身障(家)',   費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:true  }, note:'' },
-  { cat:'8.重身障(學)', 費: { 家長會費:false, 平安保險費:true,  午餐費:false, 教科書費:true  }, note:'' },
-  { cat:'9.原民生',     費: { 家長會費:false, 平安保險費:true,  午餐費:false, 教科書費:true  }, note:'' },
-  { cat:'10.原民清寒(原)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:false }, note:'' },
-  { cat:'11.功勳',      費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:false }, note:'全繳後退書籍費' },
-  { cat:'12.導師認定',  費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true  }, note:'' },
+  { cat:'1.低收(社)',    費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true,  簿本費:true  }, note:'' },
+  { cat:'2.中低收(社)', 費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true,  簿本費:true  }, note:'' },
+  { cat:'3.單親(社)',   費: { 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:false, 簿本費:false }, note:'' },
+  { cat:'4.身障(學)(社)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:true,  簿本費:false }, note:'' },
+  { cat:'5.身障(家)(社)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:true,  簿本費:false }, note:'' },
+  { cat:'6.身障(學)',   費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:true,  簿本費:false }, note:'' },
+  { cat:'7.身障(家)',   費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:true,  簿本費:false }, note:'' },
+  { cat:'8.重身障(學)', 費: { 家長會費:false, 平安保險費:true,  午餐費:false, 教科書費:true,  簿本費:false }, note:'' },
+  { cat:'9.原民生',     費: { 家長會費:false, 平安保險費:true,  午餐費:false, 教科書費:true,  簿本費:false }, note:'' },
+  { cat:'10.原民清寒(原)',費:{ 家長會費:false, 平安保險費:false, 午餐費:true,  教科書費:false, 簿本費:false }, note:'' },
+  { cat:'11.功勳',      費: { 家長會費:false, 平安保險費:false, 午餐費:false, 教科書費:false, 簿本費:false }, note:'全繳後退書籍費' },
+  { cat:'12.導師認定',  費: { 家長會費:true,  平安保險費:true,  午餐費:true,  教科書費:true,  簿本費:true  }, note:'' },
 ];
-const FEE_COLS = ['家長會費','平安保險費','教科書費'];
+const FEE_COLS = ['家長會費','平安保險費','教科書費','簿本費'];
 // Category colour map (light background + border for the row label)
 const CAT_COLORS = {
   '1.低收(社)':    {bg:'#fef2f2',bd:'#fca5a5',tx:'#c81e1e'},
