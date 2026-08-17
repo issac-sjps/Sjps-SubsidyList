@@ -294,20 +294,20 @@ td.del-cell:hover .del-btn { opacity:1; }
 .ds-t{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
 
 /* REF TABLE */
-.ref-th{background:#f4f7fb;padding:11px 14px;text-align:center;border-bottom:2px solid var(--border);
-  border-right:1px solid #dde2e9;white-space:nowrap;font-weight:700;color:var(--text2);font-size:.78rem;}
-.ref-cat-cell{padding:11px 16px;border-bottom:1px solid #f0f3f8;border-right:1px solid #dde2e9;
-  font-weight:600;font-size:.84rem;white-space:nowrap;position:sticky;left:0;
+.ref-th{background:#f4f7fb;padding:6px 10px;text-align:center;border-bottom:2px solid var(--border);
+  border-right:1px solid #dde2e9;white-space:nowrap;font-weight:700;color:var(--text2);font-size:.72rem;}
+.ref-cat-cell{padding:5px 12px;border-bottom:1px solid #f0f3f8;border-right:1px solid #dde2e9;
+  font-weight:600;font-size:.76rem;white-space:nowrap;position:sticky;left:0;
   background:#fff;z-index:2;}
 .ref-cat-cell.ref-stripe{background:#f9fbfb;}
-.ref-val-cell{padding:10px 14px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f2f5f8;
-  text-align:center;font-size:.9rem;}
+.ref-val-cell{padding:4px 10px;border-bottom:1px solid #f0f3f8;border-right:1px solid #f2f5f8;
+  text-align:center;font-size:.8rem;}
 .ref-x{display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;border-radius:50%;
-  background:var(--green-bg);color:var(--green);font-weight:700;font-size:.88rem;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--green-bg);color:var(--green);font-weight:700;font-size:.74rem;
   border:1.5px solid var(--green-bd);}
-.ref-dash{color:#ccc;font-size:1rem;}
-.ref-note{padding:10px 14px;border-bottom:1px solid #f0f3f8;font-size:.78rem;color:var(--text2);text-align:left;}
+.ref-dash{color:#ccc;font-size:.85rem;}
+.ref-note{padding:4px 10px;border-bottom:1px solid #f0f3f8;font-size:.7rem;color:var(--text2);text-align:left;}
 .ref-cat-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;
   border-radius:20px;border:1.5px solid var(--border);background:#fff;
   cursor:pointer;font-size:.81rem;font-weight:500;color:var(--text2);transition:all .15s;}
@@ -326,6 +326,10 @@ td.del-cell:hover .del-btn { opacity:1; }
   cursor:pointer;font-size:.87rem;font-weight:700;font-family:inherit;transition:background .15s;}
 .btn-promo:hover{background:#b45309;}
 .btn-promo:disabled{background:#9ca3af;cursor:not-allowed;}
+.btn-danger{padding:9px 20px;background:#dc2626;color:#fff;border:none;border-radius:7px;
+  cursor:pointer;font-size:.87rem;font-weight:700;font-family:inherit;transition:background .15s;}
+.btn-danger:hover{background:#b91c1c;}
+.btn-danger:disabled{background:#9ca3af;cursor:not-allowed;}
 
 /* COMMON */
 .alert{padding:10px 14px;border-radius:8px;font-size:.81rem;margin-bottom:12px;line-height:1.5;}
@@ -522,6 +526,17 @@ td.del-cell:hover .del-btn { opacity:1; }
         <div class="lbar"><span class="spin"></span></div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-title">🧹 清除目前學期的六年級名單</div>
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:12px;line-height:1.65">
+        若「升學年」後，新學期裡仍看得到六年級學生（例如誤按、或資料是在升學年之前就手動加入新學期的），
+        可以用這個按鈕把<strong>目前正在檢視的學期</strong>裡所有六年級學生一次刪除。請先確認上方學期選單已切換到正確的新學期再操作。
+      </p>
+      <div class="alert aw" style="margin-bottom:12px">⚠️ 此操作會直接刪除資料，且不可復原，請先確認學期無誤。</div>
+      <button class="btn-danger" id="btn-clear-g6">🗑 刪除「<span id="clear-g6-term">—</span>」的六年級名單（<span id="clear-g6-count">0</span> 人）</button>
+      <div id="clear-g6-load" style="display:none;margin-top:10px" class="lbar"><span class="spin"></span>刪除處理中...</div>
+      <div id="clear-g6-ok" class="alert as" style="display:none;margin-top:10px"></div>
+    </div>
   </div>
 
 <!-- ═══ 補助對照表 ═══ -->
@@ -532,12 +547,12 @@ td.del-cell:hover .del-btn { opacity:1; }
     </div>
 
     <div style="overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)">
-      <table id="ref-table" style="border-collapse:collapse;width:100%;font-size:.85rem;table-layout:auto">
+      <table id="ref-table" style="border-collapse:collapse;width:100%;font-size:.78rem;table-layout:auto">
         <thead>
           <tr>
-            <th style="background:#f4f7fb;padding:11px 16px;text-align:left;border-bottom:2px solid var(--border);
+            <th style="background:#f4f7fb;padding:6px 12px;text-align:left;border-bottom:2px solid var(--border);
               border-right:1px solid #dde2e9;white-space:nowrap;font-weight:700;color:var(--text2);
-              font-size:.78rem;position:sticky;left:0;z-index:5;min-width:160px">
+              font-size:.72rem;position:sticky;left:0;z-index:5;min-width:140px">
               補助身分類別
             </th>
             <th class="ref-th">家長會費</th>
@@ -1567,6 +1582,7 @@ function setupPromote(){
   document.getElementById('new-term-preview').textContent=tLabel(sug);
   inp.oninput=()=>document.getElementById('new-term-preview').textContent=inp.value||'—';
   document.getElementById('btn-promo').onclick=doPromote;
+  document.getElementById('btn-clear-g6').onclick=doClearGrade6;
 }
 function renderDist(){
   const dist={};
@@ -1581,6 +1597,39 @@ function renderDist(){
         </div>
         <span style="font-weight:700;color:var(--accent);font-size:.85rem;width:40px;text-align:right">${n} 人</span>
       </div>`).join('')||'<div class="empty">無資料</div>';
+
+  const g6Count=all.filter(s=>s.grade==='6年級').length;
+  document.getElementById('clear-g6-term').textContent=tLabel(term);
+  document.getElementById('clear-g6-count').textContent=g6Count;
+  document.getElementById('btn-clear-g6').disabled=g6Count===0;
+}
+
+async function doClearGrade6(){
+  const g6=all.filter(s=>s.grade==='6年級');
+  if(!g6.length){alert('目前學期沒有六年級學生');return;}
+  if(!confirm(`確定要刪除「${tLabel(term)}」的六年級名單嗎？\n將刪除 ${g6.length} 位學生，此操作不可復原。`))return;
+  document.getElementById('btn-clear-g6').disabled=true;
+  document.getElementById('clear-g6-load').style.display='block';
+  document.getElementById('clear-g6-ok').style.display='none';
+  try{
+    const batch=writeBatch(db);
+    g6.forEach(s=>batch.delete(doc(sCol(term),s._docId)));
+    await batch.commit();
+    await addDoc(collection(db,'editLogs'),{
+      editedBy:cUser.uid,editorName:cDoc.customName||cUser.displayName||cUser.email,
+      type:'clearGrade6',term,timestamp:serverTimestamp(),
+      summary:`手動刪除「${tLabel(term)}」六年級名單，共 ${g6.length} 人`
+    });
+    document.getElementById('clear-g6-load').style.display='none';
+    document.getElementById('clear-g6-ok').textContent=`✅ 已刪除 ${g6.length} 位六年級學生。`;
+    document.getElementById('clear-g6-ok').style.display='block';
+    await loadData();
+    renderDist();
+  }catch(e){
+    document.getElementById('clear-g6-load').style.display='none';
+    document.getElementById('btn-clear-g6').disabled=false;
+    alert('刪除失敗：'+e.message);
+  }
 }
 async function doPromote(){
   const raw=document.getElementById('new-term-inp').value.trim();
