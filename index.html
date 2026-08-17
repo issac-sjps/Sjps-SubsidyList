@@ -797,7 +797,7 @@ import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.1.0/fireb
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
                            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-         collection, getDocs, addDoc, serverTimestamp, writeBatch }
+         collection, getDocs, addDoc, serverTimestamp, writeBatch, FieldPath }
                            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 const FB  = initializeApp({
@@ -1453,7 +1453,17 @@ async function saveEdits(){
       upd.isMulti=ms.length>1;upd.multiCount=ms.length;
       if(upd['最優補助身分']!==undefined)upd.optimalType=upd['最優補助身分']||'未分類/未填寫最優身分';
       if(upd['班級']!==undefined){const cls=String(upd['班級']||'').trim();upd.grade=cls.match(/^\d/)?cls[0]+'年級':'其他';}
-      batch.update(ref,upd);
+      // NOTE: several field names (e.g. '9.原民生','10.原民清寒(原)') contain a literal
+      // "." character. Firestore's update()/batch.update() treats "." in a plain-object
+      // key as nested-field-path notation, NOT a literal character — passing the object
+      // directly here would silently write into a bogus nested field instead of the
+      // real flat column, and the edit would appear to "disappear" after reload.
+      // Using FieldPath for any key containing a dot avoids that misinterpretation.
+      const updArgs=[];
+      Object.entries(upd).forEach(([k,v])=>{
+        updArgs.push(k.includes('.') ? new FieldPath(k) : k, v);
+      });
+      batch.update(ref, ...updArgs);
       logItems.push({docId:did,name:s?.['姓名']||'?',cls:s?.['班級']||'?',
         fields:Object.entries(fields).map(([f,v])=>({field:f,from:String(s?.[f]??''),to:String(v)}))});
     });
