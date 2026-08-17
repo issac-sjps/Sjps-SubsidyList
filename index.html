@@ -430,14 +430,19 @@ td.del-cell:hover .del-btn { opacity:1; }
   <!-- ═══ 名單查閱 ═══ -->
   <div class="panel on" id="p-data">
     <div class="card">
-      <div class="card-title">🔍 篩選條件</div>
-      <div class="fbar"><span class="ftag">📚 年級</span><div class="chips" id="gc"></div></div>
-      <div class="fbar"><span class="ftag">🏷️ 類別</span><div class="chips" id="cc"></div></div>
-      <div class="fbar" style="margin:0"><span class="ftag">👤 性別</span><div class="chips" id="sc">
-        <button class="chip sx on" data-v="all">全部性別</button>
-        <button class="chip sx" data-v="男">🔵 男</button>
-        <button class="chip sx" data-v="女">🔴 女</button>
-      </div></div>
+      <div class="card-title" id="filter-toggle" style="cursor:pointer;user-select:none;justify-content:space-between;margin-bottom:0">
+        <span>🔍 篩選條件 <span id="filter-summary" style="font-weight:400;font-size:.78rem;color:var(--text2)"></span></span>
+        <span id="filter-arrow" style="font-size:.78rem;color:var(--text3)">▶ 展開</span>
+      </div>
+      <div id="filter-body" style="display:none;margin-top:14px">
+        <div class="fbar"><span class="ftag">📚 年級</span><div class="chips" id="gc"></div></div>
+        <div class="fbar"><span class="ftag">🏷️ 類別</span><div class="chips" id="cc"></div></div>
+        <div class="fbar" style="margin:0"><span class="ftag">👤 性別</span><div class="chips" id="sc">
+          <button class="chip sx on" data-v="all">全部性別</button>
+          <button class="chip sx" data-v="男">🔵 男</button>
+          <button class="chip sx" data-v="女">🔴 女</button>
+        </div></div>
+      </div>
     </div>
     <div class="card">
       <div class="toolbar">
@@ -532,16 +537,23 @@ td.del-cell:hover .del-btn { opacity:1; }
         只針對<strong>目前正在檢視的學期</strong>、單一年級做升級（例如：101 → 201），不會建立新學期、不影響其他年級。
         適合用來手動修正個別漏升的學生。1年級升上去後班級座號會清空待手動填入；6年級無法再往上升級。
       </p>
+      <div class="alert aw" style="margin-bottom:12px;line-height:1.7">
+        ⚠️ <strong>若要一次手動升多個年級，順序很重要：一定要「由高年級往低年級」依序操作</strong>
+        （先 5→6，再 4→5，再 3→4，再 2→3，最後才 1→2）。<br>
+        原因：升級是即時依「目前的 grade 欄位」判斷對象，若先做 1→2，原本1年級的學生會立刻變成2年級；
+        接著再做 2→3 時，這些「剛升上來的」學生也會被一併誤判、跟著再升一次，導致整批學生跳過一個年級。
+        由高往低做就不會有這個問題。
+      </div>
       <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
           <label style="font-size:.78rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">選擇要升級的年級</label>
           <select id="manual-promo-grade" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;
             font-family:inherit;font-size:.87rem;outline:none">
-            <option value="1">1年級 → 2年級</option>
-            <option value="2">2年級 → 3年級</option>
-            <option value="3">3年級 → 4年級</option>
-            <option value="4">4年級 → 5年級</option>
             <option value="5">5年級 → 6年級</option>
+            <option value="4">4年級 → 5年級</option>
+            <option value="3">3年級 → 4年級</option>
+            <option value="2">2年級 → 3年級</option>
+            <option value="1">1年級 → 2年級</option>
           </select>
         </div>
         <button class="btn-promo" id="btn-manual-promo">⬆️ 升級（<span id="manual-promo-count">0</span> 人）</button>
@@ -1032,7 +1044,30 @@ const DEFAULT_WIDTHS = {
 };
 let colWidths = {...DEFAULT_WIDTHS};
 
+function updateFilterSummary(){
+  const parts=[];
+  if(cGrade!=='all') parts.push(cGrade);
+  if(sCats.size) parts.push([...sCats].join('、'));
+  if(cMulti) parts.push('多重身分');
+  if(cSex!=='all') parts.push(cSex);
+  const el=document.getElementById('filter-summary');
+  if(el) el.textContent = parts.length ? `— ${parts.join('・')}` : '— 全部';
+}
+
+(function setupFilterToggle(){
+  const toggle=document.getElementById('filter-toggle');
+  const body=document.getElementById('filter-body');
+  const arrow=document.getElementById('filter-arrow');
+  if(!toggle) return;
+  toggle.onclick=()=>{
+    const open = body.style.display==='none';
+    body.style.display = open ? '' : 'none';
+    arrow.textContent = open ? '▲ 收合' : '▶ 展開';
+  };
+})();
+
 function renderTable(){
+  updateFilterSummary();
   filt = all.filter(s=>
     (cGrade==='all' || s.grade===cGrade) &&
     (cSex==='all'   || (s['性別']||'')===cSex) &&
