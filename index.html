@@ -249,6 +249,11 @@ td.idno-cell { font-size:.74rem; color:var(--text3);
   font-family:'JetBrains Mono',monospace; overflow:hidden; text-overflow:ellipsis; }
 td.idno-cell.xp { color:var(--text) !important; }
 
+/* Name cell — click to copy (view mode) */
+td.name-cell{cursor:pointer;transition:background .15s;}
+td.name-cell:hover{background:var(--accent-bg);}
+td.name-cell.copied{background:var(--green-bg) !important;color:var(--green);font-weight:700;}
+
 /* DELETE CELL in edit mode */
 td.del-cell {
   cursor:pointer; text-align:center; padding:4px !important;
@@ -1195,9 +1200,18 @@ function renderTable(){
       return `<td class="${cls}" data-ci="${ci}" title="${esc(col)}">${hasVal?v:''}</td>`;
     }).join('');
 
+    const nameRaw=ch['姓名']!==undefined?ch['姓名']:(s['姓名']??'');
+    const nameChg=ch['姓名']!==undefined?' cc':'';
+    const nameXp=isXp(3)?' xp':'';
+    const nameCell=editOn
+      ?`<td class="ec${nameChg}${nameXp}" data-ci="3"
+         onclick="sEdit(this,'${escA(s._docId)}','姓名',\`${escA(String(nameRaw))}\`)">${esc(String(nameRaw))}</td>`
+      :`<td class="name-cell${nameChg}${nameXp}" data-ci="3" title="點一下複製姓名"
+         onclick="copyName(this,'${escA(String(nameRaw))}')">${esc(String(nameRaw))}</td>`;
+
     const sibCell=cell('兄弟姊妹',19);
     return `<tr class="${gCls}${s.isMulti?' mr':''}">
-      ${seqCell}${cell('班級',1)}${cell('座號',2)}${cell('姓名',3)}${cell('性別',4)}
+      ${seqCell}${cell('班級',1)}${cell('座號',2)}${nameCell}${cell('性別',4)}
       ${idCell}${optCell}${subCells}${sibCell}
       <td data-ci="20">${multi}</td>
     </tr>`;
@@ -1283,6 +1297,30 @@ function autoFitColumns(){
 
 
 /* ── INLINE EDIT ── */
+window.copyName=function(el,text){
+  const flash=()=>{
+    el.classList.add('copied');
+    const orig=el.textContent;
+    el.textContent='✅ 已複製';
+    setTimeout(()=>{el.classList.remove('copied');el.textContent=orig;},600);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(flash).catch(()=>{
+      const ta=document.createElement('textarea');
+      ta.value=text;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');}catch(e){}
+      document.body.removeChild(ta);
+      flash();
+    });
+  } else {
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+    flash();
+  }
+};
+
 window.sEdit=function(td,did,col,cur){
   if(!editOn||td.classList.contains('editing'))return;
   td.classList.add('editing');
