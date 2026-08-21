@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>列印通知單 — SJPS</title>
+<title>新莊國小 列印通知單</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ── SCREEN STYLES ── */
@@ -226,13 +226,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div class="setting-grid">
           <div class="setting-group">
             <label>學年度</label>
-            <input type="text" id="cfg-year" value="114" placeholder="114">
+            <input type="text" id="cfg-year" value="115" placeholder="115">
           </div>
           <div class="setting-group">
             <label>學期</label>
             <select id="cfg-sem">
-              <option value="下學期" selected>下學期</option>
-              <option value="上學期">上學期</option>
+              <option value="下學期">下學期</option>
+              <option value="上學期" selected>上學期</option>
             </select>
           </div>
           <div class="setting-group">
@@ -664,8 +664,10 @@ function getCfg(){
   const showFooter=document.getElementById('cfg-footer').checked;
   const col4=document.getElementById('cfg-col4').value;
   const col5=document.getElementById('cfg-col5').value;
-  const emptyRows=parseInt(document.getElementById('cfg-emptyrows').value)||0;
-  const emptyRowsBlank=parseInt(document.getElementById('cfg-emptyrows-blank').value)||0;
+  const emptyRowsRaw=document.getElementById('cfg-emptyrows').value.trim();
+  const emptyRowsBlankRaw=document.getElementById('cfg-emptyrows-blank').value.trim();
+  const emptyRows=emptyRowsRaw===''?6:parseInt(emptyRowsRaw)||0;
+  const emptyRowsBlank=emptyRowsBlankRaw===''?8:parseInt(emptyRowsBlankRaw)||0;
   return{year,sem,deadline,ext,instructions,showRef,showFooter,col4,col5,emptyRows,emptyRowsBlank};
 }
 
@@ -694,7 +696,7 @@ function buildClassHTML(cls, cfg, isScreen=false){
   const isEmpty=students.length===0;
 
   // Title — 空白班級加標注
-  let html=`<div class="p-header">${esc(cfg.year)}學年度 ${esc(cfg.sem)} 減免申請調查表(${esc(cls)})</div>`;
+  let html=`<div class="p-header">新莊國小 ${esc(cfg.year)}學年度 ${esc(cfg.sem)} 減免申請調查表(${esc(cls)})</div>`;
 
   // Instructions
   html+=`<div class="p-instruction">
@@ -751,7 +753,7 @@ function buildClassHTML(cls, cfg, isScreen=false){
   });
 
   // ★ 空班級印指定行空白，有資料的班級印指定行（可於表單設定調整）
-  const emptyRowCount = isEmpty ? (cfg.emptyRowsBlank??8) : (cfg.emptyRows??6);
+  const emptyRowCount = isEmpty ? cfg.emptyRowsBlank : cfg.emptyRows;
   for(let i=0;i<emptyRowCount;i++){
     html+=`<tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>`;
   }
