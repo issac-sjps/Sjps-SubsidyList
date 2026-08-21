@@ -275,7 +275,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 (列出同校弟妹的班級姓名)</textarea>
           </div>
           <div class="setting-group">
-            <label>空白列印行數（有資料的班級）</label>
+            <label>該班級表格總列數（有資料的班級，含學生資料列，超過人數的部分印成空白列）</label>
             <input type="number" id="cfg-emptyrows" min="0" max="20" value="6">
           </div>
           <div class="setting-group">
@@ -753,7 +753,7 @@ function buildClassHTML(cls, cfg, isScreen=false){
   });
 
   // ★ 空班級印指定行空白，有資料的班級印指定行（可於表單設定調整）
-  const emptyRowCount = isEmpty ? cfg.emptyRowsBlank : cfg.emptyRows;
+  const emptyRowCount = isEmpty ? cfg.emptyRowsBlank : Math.max(0, cfg.emptyRows - students.length);
   for(let i=0;i<emptyRowCount;i++){
     html+=`<tr class="p-empty-row"><td></td><td></td><td></td><td></td><td></td></tr>`;
   }
