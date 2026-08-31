@@ -255,6 +255,9 @@ td.idno-cell.xp { color:var(--text) !important; }
 td.name-cell{cursor:pointer;transition:background .15s;}
 td.name-cell:hover{background:var(--accent-bg);}
 td.name-cell.copied{background:var(--green-bg) !important;color:var(--green);font-weight:700;}
+td.copy-cell{cursor:pointer;transition:background .15s;}
+td.copy-cell:hover{background:var(--accent-bg);}
+td.copy-cell.copied{background:var(--green-bg) !important;color:var(--green);font-weight:700;}
 
 /* DELETE CELL in edit mode */
 td.del-cell {
@@ -1100,7 +1103,7 @@ let expandedColIdx = -1;
 
 // Default widths (px) per ci — user can drag to override, stored in colWidths
 const DEFAULT_WIDTHS = {
-  0:32, 1:38, 2:32, 3:66, 4:28, 5:56,
+  0:26, 1:38, 2:32, 3:66, 4:28, 5:56,
   6:130, // 最優補助身分 — wider default but not infinite
   7:46,8:46,9:46,10:46,11:46,12:46,13:46,14:46,15:46,16:46,17:46,18:46,
   19:60, 20:38
@@ -1182,7 +1185,7 @@ function renderTable(){
     const cls = noExpand||alwaysOpen ? '' : (xp ? 'xp' : 'xp-able');
     const w   = colWidths[ci]||46;
     // Resize handle for all except # and 多重
-    const handle = (noExpand && (ci===0||ci===20)) ? '' :
+    const handle = (noExpand && ci===20) ? '' :
       `<span class="col-resize-handle" data-ci="${ci}" onmousedown="startResize(event,${ci})"></span>`;
     return `<th data-ci="${ci}" class="${cls}" style="width:${w}px;min-width:${w}px" title="${esc(label)}">
       <span class="th-label">${esc(label)}</span>${handle}
@@ -1191,17 +1194,24 @@ function renderTable(){
 
   document.getElementById('thead').innerHTML = `${colgroup}<tr>${headerRow}</tr>`;
 
-  // Header click → toggle expand (only on label, not handle)
+  // Header click → copy label; if expandable, also toggle expand (only on label, not handle)
   document.querySelectorAll('#thead th[data-ci] .th-label').forEach(lbl=>{
     const th = lbl.closest('th');
     const ci = parseInt(th.dataset.ci);
-    if(!th.classList.contains('xp-able')&&!th.classList.contains('xp')) return;
+    const label = th.getAttribute('title')||lbl.textContent;
+    const canExpand = th.classList.contains('xp-able')||th.classList.contains('xp');
     lbl.style.cursor='pointer';
+    lbl.title = canExpand ? '點一下複製欄位名稱／展開收合' : '點一下複製欄位名稱';
     lbl.onclick=(e)=>{
       e.stopPropagation();
-      if(expandedCols.has(ci)) expandedCols.delete(ci);
-      else expandedCols.add(ci);
-      renderTable();
+      if(canExpand){
+        if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(label).catch(()=>{});
+        if(expandedCols.has(ci)) expandedCols.delete(ci);
+        else expandedCols.add(ci);
+        renderTable();
+      } else {
+        copyName(lbl,label);
+      }
     };
   });
 
@@ -1220,7 +1230,9 @@ function renderTable(){
       const cls=`${extraCls}${chg}${xp}`.trim();
       if(editOn) return `<td class="ec ${cls}" data-ci="${ci}"
         onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${v}</td>`;
-      return `<td class="${cls}" data-ci="${ci}">${v}</td>`;
+      if(String(raw).trim()==='') return `<td class="${cls}" data-ci="${ci}"></td>`;
+      return `<td class="${cls} copy-cell" data-ci="${ci}" title="點一下複製"
+        onclick="copyName(this,'${escA(String(raw))}')">${v}</td>`;
     };
 
     const seqCell = editOn
@@ -1236,14 +1248,18 @@ function renderTable(){
     const idCell=editOn
       ?`<td class="ec idno-cell${idChg}${idXp}" data-ci="5" title="${esc(String(idRaw))}"
          onclick="sEdit(this,'${escA(s._docId)}','身分證號',\`${escA(String(idRaw))}\`)">${esc(String(idRaw))}</td>`
-      :`<td class="idno-cell${idChg}${idXp}" data-ci="5" title="${esc(String(idRaw))}">${esc(String(idRaw))}</td>`;
+      :(String(idRaw).trim()===''?`<td class="idno-cell${idChg}${idXp}" data-ci="5"></td>`
+      :`<td class="idno-cell copy-cell${idChg}${idXp}" data-ci="5" title="點一下複製"
+         onclick="copyName(this,'${escA(String(idRaw))}')">${esc(String(idRaw))}</td>`);
 
     const optRaw=ch['最優補助身分']!==undefined?ch['最優補助身分']:(s['最優補助身分']??'');
     const optChg=ch['最優補助身分']!==undefined?' cc':'';
     const optCell=editOn
       ?`<td class="ec topt xp${optChg}" data-ci="6"
          onclick="sEdit(this,'${escA(s._docId)}','最優補助身分',\`${escA(String(optRaw))}\`)">${esc(String(optRaw))}</td>`
-      :`<td class="topt xp${optChg}" data-ci="6">${esc(String(optRaw))}</td>`;
+      :(String(optRaw).trim()===''?`<td class="topt xp${optChg}" data-ci="6"></td>`
+      :`<td class="topt copy-cell xp${optChg}" data-ci="6" title="點一下複製"
+         onclick="copyName(this,'${escA(String(optRaw))}')">${esc(String(optRaw))}</td>`);
 
     const subCells=subsidyCols2.map((col,si)=>{
       const ci=7+si;
@@ -1255,7 +1271,9 @@ function renderTable(){
       const cls=`sub-cell ${hasVal?'has-val':'no-val'}${chg}${xp}`;
       if(editOn) return `<td class="${cls} ec" data-ci="${ci}" title="${esc(col)}"
         onclick="sEdit(this,'${escA(s._docId)}','${escA(col)}',\`${escA(String(raw))}\`)">${hasVal?v:''}</td>`;
-      return `<td class="${cls}" data-ci="${ci}" title="${esc(col)}">${hasVal?v:''}</td>`;
+      if(!hasVal) return `<td class="${cls}" data-ci="${ci}" title="${esc(col)}"></td>`;
+      return `<td class="${cls} copy-cell" data-ci="${ci}" title="點一下複製"
+        onclick="copyName(this,'${escA(String(raw))}')">${v}</td>`;
     }).join('');
 
     const nameRaw=ch['姓名']!==undefined?ch['姓名']:(s['姓名']??'');
