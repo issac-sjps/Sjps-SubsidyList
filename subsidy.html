@@ -106,6 +106,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .stbl tbody tr:last-child td{border-bottom:none;}
 .badge{padding:2px 8px;border-radius:20px;font-size:.71rem;font-weight:700;display:inline-block;}
 
+/* COLUMN COPY BUTTON */
+.stbl thead th{position:sticky;top:0;}
+.th-flex{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.col-copy{border:none;background:transparent;cursor:pointer;padding:2px 4px;border-radius:5px;
+  font-size:.85rem;line-height:1;opacity:.45;transition:all .15s;flex-shrink:0;}
+.col-copy:hover{opacity:1;background:var(--accent-bg,#e0edff);}
+.col-copy.copied{opacity:1;}
+#copy-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+  background:#1f2937;color:#fff;padding:9px 18px;border-radius:22px;font-size:.83rem;font-weight:600;
+  box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:999;opacity:0;pointer-events:none;transition:all .25s;}
+#copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
 /* GRADE FILTER */
 .grade-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .gf-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
@@ -247,7 +259,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="grade-filter" id="moe-gf"></div>
       <div class="stbl-wrap">
         <table class="stbl">
-          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>身分</th><th>補助項目</th><th style="text-align:right">金額</th></tr></thead>
+          <thead><tr>
+            <th><div class="th-flex">班級<button class="col-copy" onclick="copyCol('moe-tbody',0,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">座號<button class="col-copy" onclick="copyCol('moe-tbody',1,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">姓名<button class="col-copy" onclick="copyCol('moe-tbody',2,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">身分<button class="col-copy" onclick="copyCol('moe-tbody',3,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">補助項目<button class="col-copy" onclick="copyCol('moe-tbody',4,this)" title="複製整欄">📋</button></div></th>
+            <th style="text-align:right"><div class="th-flex">金額<button class="col-copy" onclick="copyCol('moe-tbody',5,this)" title="複製整欄">📋</button></div></th>
+          </tr></thead>
           <tbody id="moe-tbody"></tbody>
         </table>
       </div>
@@ -264,7 +283,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="grade-filter" id="book-gf"></div>
       <div class="stbl-wrap">
         <table class="stbl">
-          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>核定類別</th><th>補助原因</th><th style="text-align:right">金額</th></tr></thead>
+          <thead><tr>
+            <th><div class="th-flex">班級<button class="col-copy" onclick="copyCol('book-tbody',0,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">座號<button class="col-copy" onclick="copyCol('book-tbody',1,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">姓名<button class="col-copy" onclick="copyCol('book-tbody',2,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">核定類別<button class="col-copy" onclick="copyCol('book-tbody',3,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">補助原因<button class="col-copy" onclick="copyCol('book-tbody',4,this)" title="複製整欄">📋</button></div></th>
+            <th style="text-align:right"><div class="th-flex">金額<button class="col-copy" onclick="copyCol('book-tbody',5,this)" title="複製整欄">📋</button></div></th>
+          </tr></thead>
           <tbody id="book-tbody"></tbody>
         </table>
       </div>
@@ -281,7 +307,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="grade-filter" id="note-gf"></div>
       <div class="stbl-wrap">
         <table class="stbl">
-          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>身分</th><th>補助原因</th><th style="text-align:right">金額</th></tr></thead>
+          <thead><tr>
+            <th><div class="th-flex">班級<button class="col-copy" onclick="copyCol('note-tbody',0,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">座號<button class="col-copy" onclick="copyCol('note-tbody',1,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">姓名<button class="col-copy" onclick="copyCol('note-tbody',2,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">身分<button class="col-copy" onclick="copyCol('note-tbody',3,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">補助原因<button class="col-copy" onclick="copyCol('note-tbody',4,this)" title="複製整欄">📋</button></div></th>
+            <th style="text-align:right"><div class="th-flex">金額<button class="col-copy" onclick="copyCol('note-tbody',5,this)" title="複製整欄">📋</button></div></th>
+          </tr></thead>
           <tbody id="note-tbody"></tbody>
         </table>
       </div>
@@ -298,7 +331,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="grade-filter" id="indig-gf"></div>
       <div class="stbl-wrap">
         <table class="stbl">
-          <thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>族別</th><th>原始備註</th></tr></thead>
+          <thead><tr>
+            <th><div class="th-flex">班級<button class="col-copy" onclick="copyCol('indig-tbody',0,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">座號<button class="col-copy" onclick="copyCol('indig-tbody',1,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">姓名<button class="col-copy" onclick="copyCol('indig-tbody',2,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">族別<button class="col-copy" onclick="copyCol('indig-tbody',3,this)" title="複製整欄">📋</button></div></th>
+            <th><div class="th-flex">原始備註<button class="col-copy" onclick="copyCol('indig-tbody',4,this)" title="複製整欄">📋</button></div></th>
+          </tr></thead>
           <tbody id="indig-tbody"></tbody>
         </table>
       </div>
@@ -381,6 +420,36 @@ const CAT_COLORS = {
 };
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ── 整欄複製（依目前篩選/顯示中的資料）── */
+function showCopyToast(msg){
+  let t=document.getElementById('copy-toast');
+  if(!t){t=document.createElement('div');t.id='copy-toast';document.body.appendChild(t);}
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(showCopyToast._tm);
+  showCopyToast._tm=setTimeout(()=>t.classList.remove('show'),1600);
+}
+async function copyCol(tbodyId,colIndex,btnEl){
+  const rows=[...document.querySelectorAll('#'+tbodyId+' tr')];
+  const vals=rows.map(r=>(r.children[colIndex]?.textContent||'').trim());
+  if(!vals.length){showCopyToast('目前沒有資料可複製');return;}
+  const text=vals.join('\n');
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');}catch(e2){}
+    document.body.removeChild(ta);
+  }
+  showCopyToast(`✅ 已複製 ${vals.length} 筆，可直接貼到 Excel`);
+  if(btnEl){
+    btnEl.classList.add('copied');
+    setTimeout(()=>btnEl.classList.remove('copied'),1200);
+  }
+}
 function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'上':'下');}
 function money(v){return v?'$'+Number(v).toLocaleString():'$0';}
 function grade(cls){const m=String(cls||'').match(/^(\d)/);return m?parseInt(m[1]):0;}
