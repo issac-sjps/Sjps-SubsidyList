@@ -208,11 +208,29 @@ thead th[data-ci="0"] { text-align:center; }
 }
 
 /* Column header: expandable hint */
-thead th .th-label { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+thead th .th-label { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:14px; }
 thead th.xp-able .th-label::after { content:' ↔'; font-size:.56rem; opacity:.3; }
 thead th.xp .th-label::after      { content:' ✕'; font-size:.56rem; opacity:.8; }
 thead th.xp { color:var(--accent); background:#e8f0fe; }
 thead th:hover:not([data-ci="0"]):not([data-ci="20"]) { background:#eaf0fb; }
+
+/* Whole-column copy button (top-right corner of each header cell) */
+.col-copy-btn{
+  position:absolute; top:1px; right:8px; width:14px; height:14px; line-height:14px;
+  text-align:center; font-size:9px; border:none; border-radius:3px; padding:0;
+  background:rgba(255,255,255,.92); cursor:pointer; opacity:0; z-index:21;
+  transition:opacity .15s, background .15s;
+}
+thead th:hover .col-copy-btn{ opacity:.75; }
+.col-copy-btn:hover{ opacity:1 !important; background:var(--accent-bg); }
+.col-copy-btn.copied{ opacity:1 !important; background:var(--green-bg) !important; }
+#col-copy-toast{
+  position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px);
+  background:#1f2937; color:#fff; padding:9px 18px; border-radius:22px; font-size:.83rem;
+  font-weight:600; box-shadow:0 6px 20px rgba(0,0,0,.2); z-index:9999; opacity:0;
+  pointer-events:none; transition:all .25s;
+}
+#col-copy-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
 tbody td {
   padding:6px 6px; border-bottom:1px solid #f0f3f8;
@@ -1187,8 +1205,12 @@ function renderTable(){
     // Resize handle for all except # and 多重
     const handle = (noExpand && ci===20) ? '' :
       `<span class="col-resize-handle" data-ci="${ci}" onmousedown="startResize(event,${ci})"></span>`;
+    // Whole-column copy button — skip # (0) and 多重 (20), those aren't copyable text columns
+    const copyBtn = (ci===0||ci===20) ? '' :
+      `<button class="col-copy-btn" data-ci="${ci}" title="複製整欄（目前篩選結果）"
+        onclick="event.stopPropagation();copyColumnByCi(${ci},this)">📋</button>`;
     return `<th data-ci="${ci}" class="${cls}" style="width:${w}px;min-width:${w}px" title="${esc(label)}">
-      <span class="th-label">${esc(label)}</span>${handle}
+      <span class="th-label">${esc(label)}</span>${handle}${copyBtn}
     </th>`;
   }).join('');
 
@@ -1371,6 +1393,41 @@ function autoFitColumns(){
   renderTable();
 }
 
+
+/* ── WHOLE-COLUMN COPY (respects current filter/sort in #tbody) ── */
+function showColCopyToast(msg){
+  let t=document.getElementById('col-copy-toast');
+  if(!t){t=document.createElement('div');t.id='col-copy-toast';document.body.appendChild(t);}
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(showColCopyToast._tm);
+  showColCopyToast._tm=setTimeout(()=>t.classList.remove('show'),1600);
+}
+window.copyColumnByCi=function(ci,btnEl){
+  const cells=[...document.querySelectorAll(`#tbody td[data-ci="${ci}"]`)];
+  const vals=cells.map(td=>td.textContent.trim());
+  if(!vals.length){showColCopyToast('目前沒有資料可複製');return;}
+  const text=vals.join('\n');
+  const done=()=>{
+    showColCopyToast(`✅ 已複製 ${vals.length} 筆，可直接貼到 Excel`);
+    if(btnEl){btnEl.classList.add('copied');setTimeout(()=>btnEl.classList.remove('copied'),1200);}
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{
+      const ta=document.createElement('textarea');
+      ta.value=text;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');}catch(e){}
+      document.body.removeChild(ta);
+      done();
+    });
+  } else {
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+    done();
+  }
+};
 
 /* ── INLINE EDIT ── */
 window.copyName=function(el,text){
