@@ -290,8 +290,7 @@ onAuthStateChanged(auth,async user=>{
   const uRef=doc(db,'users',user.uid);
   let snap=await getDoc(uRef);
   if(!snap.exists()){
-    const allU=await getDocs(collection(db,'users'));
-    const isAdm=ADMIN_EMAILS.includes(user.email)||allU.empty;
+    const isAdm=ADMIN_EMAILS.includes(user.email);
     await setDoc(uRef,{email:user.email,displayName:user.displayName||'',customName:'',
       photoURL:user.photoURL||'',role:isAdm?'admin':'pending',status:isAdm?'active':'pending',
       createdAt:serverTimestamp(),approvedAt:isAdm?serverTimestamp():null});
