@@ -583,11 +583,12 @@ function computeStats(){
       }
     });
 
-    // MOE (教育部): 低收 $600課本, 中低收 $833(課本600+保險233), 導師認定 $833
+    // MOE (教育部代收代辦費): 低收 $600(家長會費100+課本500), 中低收/導師認定 $833(家長會費100+課本500+保險233)
+    // ★ 金額不變，僅將項目說明拆細（先前誤把家長會費100合併寫在課本裡）
     let moeType='',moeAmt=0,moeItems='';
-    if(opt.includes('低收')&&!opt.includes('中低')){moeType='低收入戶';moeAmt=600;moeItems='課本 $600';}
-    else if(opt.includes('中低')){moeType='中低收入戶';moeAmt=833;moeItems='課本 $600 + 保險 $233';}
-    else if(opt.includes('導師')){moeType='導師認定';moeAmt=833;moeItems='課本 $600 + 保險 $233';}
+    if(opt.includes('低收')&&!opt.includes('中低')){moeType='低收入戶';moeAmt=600;moeItems='家長會費 $100 + 課本 $500';}
+    else if(opt.includes('中低')){moeType='中低收入戶';moeAmt=833;moeItems='家長會費 $100 + 課本 $500 + 保險 $233';}
+    else if(opt.includes('導師')){moeType='導師認定';moeAmt=833;moeItems='家長會費 $100 + 課本 $500 + 保險 $233';}
     if(moeType){moeTotal+=moeAmt;moeCount++;moeStudents.push({...s,moeType,moeAmt,moeItems});}
 
     // Book (書籍費 KH): 身障(任何)、原民、功勳 → 各年級書價; 排除低收中低（教育部已補）
@@ -604,7 +605,11 @@ function computeStats(){
     else if(isMid&&isSingle){bookType='中低收入單親家庭學生';}
     else if(isIndig){bookType='原住民籍學生';}
     else if(isMerit){bookType='功勳及公教遺族';}
-    if(bookType&&fee>0){bookTotal+=fee;bookCount++;bookAmt=fee;
+    // ★ 低收、中低收+單親 已申請教育部代收代辦費補助，書籍費須扣除500元避免重複請領
+    const needsMoeDeduct=isLow||(isMid&&isSingle);
+    if(bookType&&fee>0){
+      bookAmt=needsMoeDeduct?fee-500:fee;
+      bookTotal+=bookAmt;bookCount++;
       bookStudents.push({...s,bookType,bookAmt});}
 
     // Notebook (簿本費): 低收 + 中低收 + 導師認定 → $200
@@ -862,17 +867,19 @@ function buildFeeGrid(){
     </div>`).join('');
 }
 function buildFeeExplain(){
+  // ★ 教育部金額欄：拆細為「家長會費$100+課本$500(+保險$233)」，總額不變
+  // ★ 書籍費金額欄：低收、中低收+單親已領教育部代收代辦費，書籍費須扣$500避免重複請領
   const rows=[
-    ['1.低收(社)','課本 $600','（教育部補助）','$200'],
-    ['2.中低收(社)','課本 $600 + 保險 $233 = $833','（教育部補助）','$200'],
-    ['3.單親(社)','—','—','—'],
+    ['1.低收(社)','家長會費 $100 + 課本 $500 = $600','各年級書價 − $500（已領教育部補助，避免重複請領）','$200'],
+    ['2.中低收(社)','家長會費 $100 + 課本 $500 + 保險 $233 = $833','（教育部補助，單獨中低收不列書籍費）','$200'],
+    ['3.單親(社)','—','與中低收合併時 → 各年級書價 − $500（避免重複請領）','—'],
     ['4/5.身障(社)','—','各年級書價','—'],
     ['6/7.身障(一般)','—','各年級書價','—'],
     ['8.重身障(學)','—','各年級書價','—'],
     ['9.原民生','—','各年級書價','—'],
     ['10.原民清寒','—','—（教育部管）','—'],
     ['11.功勳','—','各年級書價','—'],
-    ['12.導師認定','課本 $600 + 保險 $233 = $833','—','$200'],
+    ['12.導師認定','家長會費 $100 + 課本 $500 + 保險 $233 = $833','—','$200'],
   ];
   document.getElementById('fee-explain').innerHTML=rows.map(r=>`<tr>
     <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600">${esc(r[0])}</td>
