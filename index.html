@@ -932,7 +932,7 @@ async function initApp(){
     };
   });
 
-  document.getElementById('btn-exp-a').onclick=()=>doExport(all,'全部');
+  document.getElementById('btn-exp-a').onclick=()=>doExportAllByGrade(all);
   document.getElementById('btn-exp-f').onclick=()=>doExport(filt,sCats.size?[...sCats].join('、'):'全部');
   document.getElementById('btn-edit').onclick=toggleEdit;
   document.getElementById('btn-expand-all').onclick=()=>{ autoFitColumns(); };
@@ -2164,14 +2164,53 @@ async function doNewSemester(){
 }
 
 /* ── EXPORT ── */
+function sortByClassSeat(data){
+  return [...data].sort((a,b)=>{
+    const ca=String(a['班級']||''),cb=String(b['班級']||'');
+    if(ca!==cb) return ca.localeCompare(cb,'zh-TW');
+    return Number(a['座號']||0)-Number(b['座號']||0);
+  });
+}
+
+function rowsFor(data){
+  return sortByClassSeat(data).map((s,i)=>{const r={序號:i+1};ALL_COLS.forEach(c=>r[c]=s[c]??'');r['多重標記']=s.isMulti?`多重(${s.multiCount}項)`:'';return r;});
+}
+
+const COL_WIDTHS=[{wch:4},{wch:6},{wch:4},{wch:8},{wch:4},{wch:12},{wch:14},...Array(12).fill({wch:10}),{wch:8},{wch:10}];
+
 function doExport(data,label){
   if(!data.length){alert('沒有資料');return;}
-  const rows=data.map((s,i)=>{const r={序號:i+1};ALL_COLS.forEach(c=>r[c]=s[c]??'');r['多重標記']=s.isMulti?`多重(${s.multiCount}項)`:'';return r;});
   const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:4},{wch:6},{wch:4},{wch:8},{wch:4},{wch:12},{wch:14},...Array(12).fill({wch:10}),{wch:8},{wch:10}];
+  const ws=XLSX.utils.json_to_sheet(rowsFor(data));
+  ws['!cols']=COL_WIDTHS;
   XLSX.utils.book_append_sheet(wb,ws,`${tLabel(term)}_${label}`.substring(0,31));
   XLSX.writeFile(wb,`補助名單_${tLabel(term)}_${label}_${today()}.xlsx`);
+}
+
+const GRADE_SHEET_ORDER=[
+  {key:'1年級',name:'一年級'},
+  {key:'2年級',name:'二年級'},
+  {key:'3年級',name:'三年級'},
+  {key:'4年級',name:'四年級'},
+  {key:'5年級',name:'五年級'},
+  {key:'6年級',name:'六年級'},
+  {key:'其他',name:'其他'}
+];
+
+function doExportAllByGrade(data){
+  if(!data.length){alert('沒有資料');return;}
+  const wb=XLSX.utils.book_new();
+  let anySheet=false;
+  GRADE_SHEET_ORDER.forEach(({key,name})=>{
+    const group=data.filter(s=>(s.grade||'其他')===key);
+    if(!group.length) return;
+    anySheet=true;
+    const ws=XLSX.utils.json_to_sheet(rowsFor(group));
+    ws['!cols']=COL_WIDTHS;
+    XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
+  });
+  if(!anySheet){alert('沒有資料');return;}
+  XLSX.writeFile(wb,`補助名單_${tLabel(term)}_全部_${today()}.xlsx`);
 }
 
 /* ── 補助對照表 ── */
