@@ -600,9 +600,11 @@ function computeStats(){
     const isMid=opt.includes('中低');
     const isSingle=opt.includes('單親');
     const isMerit=opt.includes('功勳');
-    if(isDisab){bookType='身心障礙學生/家長子女';}
-    else if(isLow){bookType='低收入戶學生';}
+    // ★ 分類優先順序改為：低收 > 中低收+單親 > 身障 > 原民 > 功勳
+    // 原因：低收(或中低收+單親)若同時具身障身分，仍應計入低收/中低收統計，而非身障
+    if(isLow){bookType='低收入戶學生';}
     else if(isMid&&isSingle){bookType='中低收入單親家庭學生';}
+    else if(isDisab){bookType='身心障礙學生/家長子女';}
     else if(isIndig){bookType='原住民籍學生';}
     else if(isMerit){bookType='功勳及公教遺族';}
     // ★ 低收、中低收+單親 已申請教育部代收代辦費補助，書籍費須扣除500元避免重複請領
