@@ -281,6 +281,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="card">
       <div class="grade-filter" id="book-gf"></div>
+      <div class="grade-filter" id="book-idf" style="margin-top:8px"></div>
       <div class="stbl-wrap">
         <table class="stbl">
           <thead><tr>
@@ -708,7 +709,7 @@ function renderMoeList(list,g){
 /* ── BOOK ── */
 function renderBook(s){
   document.getElementById('book-total-lbl').textContent=`— 共 ${s.bookCount} 人 ${money(s.bookTotal)}`;
-  const cats=['身心障礙學生/家長子女','低收入戶學生','中低收入單親家庭學生','原住民籍學生','功勳及公教遺族'];
+  const cats=['身心障礙學生/家長子女','功勳及公教遺族','原住民籍學生','低收入戶學生','中低收入單親家庭學生'];
   const matrix={};
   cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
   s.bookStudents.forEach(x=>{
@@ -716,16 +717,38 @@ function renderBook(s){
     if(matrix[x.bookType]&&g){matrix[x.bookType][g]++;matrix[x.bookType].total++;matrix[x.bookType].amt+=x.bookAmt;}
   });
   buildMatrix('book-matrix',cats,matrix,s.bookTotal,'#fff7ed','#c05621');
-  buildGradeFilter('book-gf','book',(g)=>renderBookList(s.bookStudents,g));
-  renderBookList(s.bookStudents,0);
+  let curG=0,curT='all';
+  const apply=()=>renderBookList(s.bookStudents,curG,curT);
+  buildGradeFilter('book-gf','book',(g)=>{curG=g;apply();});
+  buildIdentityFilter('book-idf',cats,(t)=>{curT=t;apply();});
+  apply();
 }
-function renderBookList(list,g){
-  const f=(g?list.filter(x=>grade(x['班級']||'')==g):list.slice())
+function buildIdentityFilter(id,cats,onFilter){
+  let cur='all';
+  const el=document.getElementById(id);
+  el.innerHTML=['all',...cats].map(t=>
+    `<button class="gf-btn${t==='all'?' on':''}" data-t="${esc(t)}">${t==='all'?'全部資格':esc(t)}</button>`
+  ).join('');
+  el.querySelectorAll('.gf-btn').forEach(b=>{
+    b.onclick=()=>{
+      cur=b.dataset.t;
+      el.querySelectorAll('.gf-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      onFilter(cur);
+    };
+  });
+}
+function renderBookList(list,g,t){
+  const f=(list.filter(x=>(!g||grade(x['班級']||'')==g)&&(!t||t==='all'||x.bookType===t)))
     .sort((a,b)=>{
       const c=String(a['班級']||'').localeCompare(String(b['班級']||''),'zh-TW');
       if(c!==0)return c;
       return (parseInt(a['座號'])||0)-(parseInt(b['座號'])||0);
     });
+  const subTotal=f.reduce((sum,x)=>sum+(x.bookAmt||0),0);
+  document.getElementById('book-total-lbl').textContent=(g||(t&&t!=='all'))
+    ?`— 篩選結果 ${f.length} 人 ${money(subTotal)}（全部 ${list.length} 人 ${money(list.reduce((a,x)=>a+(x.bookAmt||0),0))}）`
+    :`— 共 ${list.length} 人 ${money(subTotal)}`;
   document.getElementById('book-tbody').innerHTML=f.map(x=>`<tr>
     <td>${esc(x['班級']||'')}</td><td>${esc(String(x['座號']||''))}</td>
     <td style="font-weight:600">${esc(x['姓名']||'')}</td>
