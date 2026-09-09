@@ -365,6 +365,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <span id="fee-saved" style="font-size:.8rem;color:var(--green);margin-left:10px;display:none">✅ 已儲存</span>
     </div>
     <div class="card">
+      <div class="card-title">🏫 教育部代收代辦費金額設定</div>
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        設定家長會費、課本、保險等各項金額，以及書籍費重複請領扣除金額。修改後請按「儲存」，未來如保險費調整可直接在此更新，不需再改程式碼。
+      </p>
+      <div class="fee-grid" id="moe-grid"></div>
+      <button class="btn-save" id="btn-save-moe">💾 儲存教育部金額</button>
+      <span id="moe-saved" style="font-size:.8rem;color:var(--green);margin-left:10px;display:none">✅ 已儲存</span>
+    </div>
+    <div class="card">
       <div class="card-title">📌 補助金額說明</div>
       <table style="width:100%;border-collapse:collapse;font-size:.83rem">
         <thead><tr style="background:var(--surface2)">
@@ -400,6 +409,7 @@ const ADMIN_EMAILS = ["registrar@sjps.kh.edu.tw","issac@sjps.kh.edu.tw"];
 
 // Default book fees per grade
 const DEFAULT_FEES = {1:1009,2:952,3:1171,4:1184,5:1213,6:1109};
+const DEFAULT_MOE = {parent:100,textbook:500,insurance:233,bookDeduct:500};
 const SUBSIDY_COLS = [
   '1.低收(社)','2.中低收(社)','3.單親(社)','4.身障(學)(社)',
   '5.身障(家)(社)','6.身障(學)','7.身障(家)','8.重身障(學)',
@@ -455,7 +465,7 @@ function tLabel(t){if(!t)return'—';const[y,s]=t.split('-');return y+(s==='1'?'
 function money(v){return v?'$'+Number(v).toLocaleString():'$0';}
 function grade(cls){const m=String(cls||'').match(/^(\d)/);return m?parseInt(m[1]):0;}
 
-let cUser=null, cDoc=null, currentTerm='', allStudents=[], bookFees={...DEFAULT_FEES};
+let cUser=null, cDoc=null, currentTerm='', allStudents=[], bookFees={...DEFAULT_FEES}, moeFees={...DEFAULT_MOE};
 
 /* ── AUTH ── */
 document.getElementById('btn-login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
@@ -500,6 +510,11 @@ async function initApp(){
   const feeSnap=await getDoc(doc(db,'settings','bookFees'));
   if(feeSnap.exists()) bookFees={...DEFAULT_FEES,...feeSnap.data()};
   buildFeeGrid();
+
+  // Load MOE (教育部代收代辦費) item amounts from Firestore
+  const moeSnap=await getDoc(doc(db,'settings','moeFees'));
+  if(moeSnap.exists()) moeFees={...DEFAULT_MOE,...moeSnap.data()};
+  buildMoeGrid();
   buildFeeExplain();
 
   // Load terms
@@ -526,6 +541,7 @@ async function initApp(){
 
   // Save fees
   document.getElementById('btn-save-fees').onclick=saveFees;
+  document.getElementById('btn-save-moe').onclick=saveMoeFees;
 
   await loadData();
 }
@@ -584,12 +600,14 @@ function computeStats(){
       }
     });
 
-    // MOE (教育部代收代辦費): 低收 $600(家長會費100+課本500), 中低收/導師認定 $833(家長會費100+課本500+保險233)
-    // ★ 金額不變，僅將項目說明拆細（先前誤把家長會費100合併寫在課本裡）
+    // MOE (教育部代收代辦費): 低收 = 家長會費+課本, 中低收/導師認定 = 家長會費+課本+保險
+    // 金額全部取自「補助金額設定」頁面（moeFees），不再寫死，未來保險等金額調整可直接在設定頁修改
     let moeType='',moeAmt=0,moeItems='';
-    if(opt.includes('低收')&&!opt.includes('中低')){moeType='低收入戶';moeAmt=600;moeItems='家長會費 $100 + 課本 $500';}
-    else if(opt.includes('中低')){moeType='中低收入戶';moeAmt=833;moeItems='家長會費 $100 + 課本 $500 + 保險 $233';}
-    else if(opt.includes('導師')){moeType='導師認定';moeAmt=833;moeItems='家長會費 $100 + 課本 $500 + 保險 $233';}
+    const moeLow=moeFees.parent+moeFees.textbook;
+    const moeFull=moeFees.parent+moeFees.textbook+moeFees.insurance;
+    if(opt.includes('低收')&&!opt.includes('中低')){moeType='低收入戶';moeAmt=moeLow;moeItems=`家長會費 $${moeFees.parent} + 課本 $${moeFees.textbook}`;}
+    else if(opt.includes('中低')){moeType='中低收入戶';moeAmt=moeFull;moeItems=`家長會費 $${moeFees.parent} + 課本 $${moeFees.textbook} + 保險 $${moeFees.insurance}`;}
+    else if(opt.includes('導師')){moeType='導師認定';moeAmt=moeFull;moeItems=`家長會費 $${moeFees.parent} + 課本 $${moeFees.textbook} + 保險 $${moeFees.insurance}`;}
     if(moeType){moeTotal+=moeAmt;moeCount++;moeStudents.push({...s,moeType,moeAmt,moeItems});}
 
     // Book (書籍費 KH): 身障(任何)、原民、功勳 → 各年級書價; 排除低收中低（教育部已補）
@@ -608,10 +626,10 @@ function computeStats(){
     else if(isDisab){bookType='身心障礙學生/家長子女';}
     else if(isIndig){bookType='原住民籍學生';}
     else if(isMerit){bookType='功勳及公教遺族';}
-    // ★ 低收、中低收+單親 已申請教育部代收代辦費補助，書籍費須扣除500元避免重複請領
+    // ★ 低收、中低收+單親 已申請教育部代收代辦費補助，書籍費須扣除設定值(預設$500)避免重複請領
     const needsMoeDeduct=isLow||(isMid&&isSingle);
     if(bookType&&fee>0){
-      bookAmt=needsMoeDeduct?fee-500:fee;
+      bookAmt=needsMoeDeduct?fee-moeFees.bookDeduct:fee;
       bookTotal+=bookAmt;bookCount++;
       bookStudents.push({...s,bookType,bookAmt});}
 
@@ -891,20 +909,35 @@ function buildFeeGrid(){
       <input type="number" id="fee-${g}" value="${bookFees[g]||0}">
     </div>`).join('');
 }
+function buildMoeGrid(){
+  const items=[
+    ['parent','家長會費'],
+    ['textbook','課本'],
+    ['insurance','保險'],
+    ['bookDeduct','書籍費扣除金額']
+  ];
+  document.getElementById('moe-grid').innerHTML=items.map(([k,label])=>`
+    <div class="fee-item">
+      <label>${esc(label)}</label>
+      <input type="number" id="moe-${k}" value="${moeFees[k]||0}">
+    </div>`).join('');
+}
 function buildFeeExplain(){
-  // ★ 教育部金額欄：拆細為「家長會費$100+課本$500(+保險$233)」，總額不變
-  // ★ 書籍費金額欄：低收、中低收+單親已領教育部代收代辦費，書籍費須扣$500避免重複請領
+  const {parent,textbook,insurance}=moeFees;
+  const lowAmt=parent+textbook, fullAmt=parent+textbook+insurance;
+  // ★ 教育部金額欄：拆細為「家長會費+課本(+保險)」，數字全部取自「補助金額設定」頁面
+  // ★ 書籍費金額欄：低收、中低收+單親已領教育部代收代辦費，書籍費須扣除設定值避免重複請領
   const rows=[
-    ['1.低收(社)','家長會費 $100 + 課本 $500 = $600','各年級書價 − $500（已領教育部補助，避免重複請領）','$200'],
-    ['2.中低收(社)','家長會費 $100 + 課本 $500 + 保險 $233 = $833','（教育部補助，單獨中低收不列書籍費）','$200'],
-    ['3.單親(社)','—','與中低收合併時 → 各年級書價 − $500（避免重複請領）','—'],
+    ['1.低收(社)',`家長會費 $${parent} + 課本 $${textbook} = $${lowAmt}`,`各年級書價 − $${moeFees.bookDeduct}（已領教育部補助，避免重複請領）`,'$200'],
+    ['2.中低收(社)',`家長會費 $${parent} + 課本 $${textbook} + 保險 $${insurance} = $${fullAmt}`,'（教育部補助，單獨中低收不列書籍費）','$200'],
+    ['3.單親(社)','—',`與中低收合併時 → 各年級書價 − $${moeFees.bookDeduct}（避免重複請領）`,'—'],
     ['4/5.身障(社)','—','各年級書價','—'],
     ['6/7.身障(一般)','—','各年級書價','—'],
     ['8.重身障(學)','—','各年級書價','—'],
     ['9.原民生','—','各年級書價','—'],
     ['10.原民清寒','—','—（教育部管）','—'],
     ['11.功勳','—','各年級書價','—'],
-    ['12.導師認定','家長會費 $100 + 課本 $500 + 保險 $233 = $833','—','$200'],
+    ['12.導師認定',`家長會費 $${parent} + 課本 $${textbook} + 保險 $${insurance} = $${fullAmt}`,'—','$200'],
   ];
   document.getElementById('fee-explain').innerHTML=rows.map(r=>`<tr>
     <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600">${esc(r[0])}</td>
@@ -920,6 +953,17 @@ async function saveFees(){
   }
   await setDoc(doc(db,'settings','bookFees'),{...bookFees,updatedAt:serverTimestamp()});
   const ok=document.getElementById('fee-saved');
+  ok.style.display='inline';
+  setTimeout(()=>ok.style.display='none',2500);
+  renderAll();
+}
+async function saveMoeFees(){
+  ['parent','textbook','insurance','bookDeduct'].forEach(k=>{
+    moeFees[k]=parseInt(document.getElementById(`moe-${k}`).value)||0;
+  });
+  await setDoc(doc(db,'settings','moeFees'),{...moeFees,updatedAt:serverTimestamp()});
+  buildFeeExplain();
+  const ok=document.getElementById('moe-saved');
   ok.style.display='inline';
   setTimeout(()=>ok.style.display='none',2500);
   renderAll();
