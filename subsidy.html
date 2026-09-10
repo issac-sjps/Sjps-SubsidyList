@@ -698,11 +698,12 @@ function renderMoe(s){
   document.getElementById('moe-total-lbl').textContent=`— 共 ${s.moeCount} 人 ${money(s.moeTotal)}`;
   const cats=['低收入戶','中低收入戶','導師認定'];
   const matrix={};
-  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
+  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0,amtG:{1:0,2:0,3:0,4:0,5:0,6:0}};});
   s.moeStudents.forEach(x=>{
     const g=grade(x['班級']||'');
+    // ★ 改用學生實際的 x.moeAmt（取自「補助金額設定」），不再寫死 600/833
     if(matrix[x.moeType]&&g){matrix[x.moeType][g]++;matrix[x.moeType].total++;
-      matrix[x.moeType].amt+=(x.moeType==='低收入戶'?600:833);}
+      matrix[x.moeType].amt+=x.moeAmt;matrix[x.moeType].amtG[g]+=x.moeAmt;}
   });
   buildMatrix('moe-matrix',cats,matrix,s.moeTotal,'#eff6ff','var(--accent)');
   buildGradeFilter('moe-gf','moe',(g)=>renderMoeList(s.moeStudents,g));
@@ -729,10 +730,11 @@ function renderBook(s){
   document.getElementById('book-total-lbl').textContent=`— 共 ${s.bookCount} 人 ${money(s.bookTotal)}`;
   const cats=['身心障礙學生/家長子女','功勳及公教遺族','原住民籍學生','低收入戶學生','中低收入單親家庭學生'];
   const matrix={};
-  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
+  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0,amtG:{1:0,2:0,3:0,4:0,5:0,6:0}};});
   s.bookStudents.forEach(x=>{
     const g=grade(x['班級']||'');
-    if(matrix[x.bookType]&&g){matrix[x.bookType][g]++;matrix[x.bookType].total++;matrix[x.bookType].amt+=x.bookAmt;}
+    if(matrix[x.bookType]&&g){matrix[x.bookType][g]++;matrix[x.bookType].total++;
+      matrix[x.bookType].amt+=x.bookAmt;matrix[x.bookType].amtG[g]+=x.bookAmt;}
   });
   buildMatrix('book-matrix',cats,matrix,s.bookTotal,'#fff7ed','#c05621');
   let curG=0,curT='all';
@@ -781,10 +783,11 @@ function renderNote(s){
   document.getElementById('note-total-lbl').textContent=`— 共 ${s.noteCount} 人 ${money(s.noteTotal)}`;
   const cats=['低收入戶','中低收入戶','導師認定'];
   const matrix={};
-  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0};});
+  cats.forEach(c=>{matrix[c]={1:0,2:0,3:0,4:0,5:0,6:0,total:0,amt:0,amtG:{1:0,2:0,3:0,4:0,5:0,6:0}};});
   s.noteStudents.forEach(x=>{
     const g=grade(x['班級']||'');
-    if(matrix[x.noteType]&&g){matrix[x.noteType][g]++;matrix[x.noteType].total++;matrix[x.noteType].amt+=200;}
+    if(matrix[x.noteType]&&g){matrix[x.noteType][g]++;matrix[x.noteType].total++;
+      matrix[x.noteType].amt+=200;matrix[x.noteType].amtG[g]+=200;}
   });
   buildMatrix('note-matrix',cats,matrix,s.noteTotal,'#f5f3ff','var(--purple)');
   buildGradeFilter('note-gf','note',(g)=>renderNoteList(s.noteStudents,g));
@@ -876,10 +879,14 @@ function buildMatrix(id,cats,matrix,total,totBg,totTx){
         <td class="amt-col">${money(r.amt||0)}</td></tr>`;
     grandCnt+=r.total||0;grandAmt+=r.amt||0;
   });
-  h+=`<tr class="ttl-row"><td>合計</td>${[1,2,3,4,5,6].map(g=>{
+  h+=`<tr class="ttl-row"><td>合計（人數）</td>${[1,2,3,4,5,6].map(g=>{
     const v=cats.reduce((a,c)=>(matrix[c]||{})[g]?(a+(matrix[c][g]||0)):a,0);
     return `<td>${v||'—'}</td>`;
-  }).join('')}<td>${grandCnt}</td><td class="amt-col">${money(grandAmt)}</td></tr></tbody>`;
+  }).join('')}<td>${grandCnt}</td><td class="amt-col">${money(grandAmt)}</td></tr>`;
+  h+=`<tr class="ttl-row"><td>金額合計</td>${[1,2,3,4,5,6].map(g=>{
+    const v=cats.reduce((a,c)=>a+((matrix[c]||{}).amtG?.[g]||0),0);
+    return `<td class="amt-col">${v?money(v):'—'}</td>`;
+  }).join('')}<td>—</td><td class="amt-col">${money(grandAmt)}</td></tr></tbody>`;
   document.getElementById(id).innerHTML=h;
 }
 
